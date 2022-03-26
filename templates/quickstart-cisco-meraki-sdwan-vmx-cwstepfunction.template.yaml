@@ -1,0 +1,968 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This stack is creating creates a step function workflow for meraki cloudWAN.
+
+# Metadata:
+#   AWS::ServerlessRepo::Application:
+#      Name: Amazon-Meraki-cloudWAN integration
+#      Description: This integration demonstrates an sets up multiple workflows using AWS Step Functions, AWS Lambda, Amazon Eventbridge and Meraki Console Amazon EventBridge Integration.
+#      Author: AWS Quick Start
+#      LicenseUrl: LICENSE
+#      ReadmeUrl: README.md
+#      Labels: ['amazon', 'eventbridge', 'integration', 'solution', 'aws', 'lambda', 'step_functions', 'meraki', 'networkmanager']
+#      HomePageUrl: https://aws.amazon.com/quickstart/quickstart-cisco-meraki-sdwan-vmx
+#      SemanticVersion: 0.1.3
+#      SourceCodeUrl: https://github.com/aws-quickstart/quickstart-cisco-meraki-sdwan-vmx
+  # AWS::CloudFormation::Interface:
+  #   ParameterGroups:
+  #   - Label:
+  #       default: Amazon EventBridge Integration Solution
+  #     Parameters:
+  #     - EventSourceName
+  #   - Label:
+  #       default: Meraki Configuration
+  #     Parameters:
+  #     - MerakiToken
+  #   ParameterLabels:
+  #     EventSourceName:
+  #       default: Event Source Name
+  #     MerakiAccessToken:
+  #       default: Access Token
+
+# Parameters:
+#   GlobalNetworkName:
+#     Description: Name of Global Network
+#     Type: String
+
+#Type: 'AWS::Serverless::Function'
+#    Properties:
+#      FunctionName: !Sub "${AWS::StackName}-MacroNFWHelperFunction"
+#      Handler: firewallmacro.handle
+#      Runtime: python3.7
+#      CodeUri:
+#        Bucket: !Sub
+#                - "${S3Bucket}"
+#                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+#        Key: !Sub "${QSS3KeyPrefix}apps/sumo-aws-apps/sumologic-app-utils/sumo_app_utils.zip"
+#      MemorySize: 128
+#      Timeout: 900
+#      Role:
+#        Fn::GetAtt:
+#          - MacroNFWHelperRole
+#          - Arn 
+Globals:
+  Function:
+    Handler: app.lambda_handler
+    Runtime: python3.8
+    Timeout: 900
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterLabels:
+      RegionsList:
+        default: region name
+Parameters:
+  RegionsList: 
+    Type: String
+    Default: "us-east-1"
+    AllowedValues:
+      - us-east-1
+      - us-west-1
+    Description: "list of regions"
+  QSS3BucketName:
+    AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
+    ConstraintDescription: "Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."
+    Default: aws-quickstart
+    Description: "S3 bucket name for the Quick Start assets. Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."
+    Type: String
+  QSS3KeyPrefix:
+    AllowedPattern: "^[0-9a-zA-Z-/]*$"
+    ConstraintDescription: "Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/)."
+    Default: quickstart-cisco-meraki-sd-wan-vmx/
+    Description: "S3 key prefix for the Quick Start assets. Quick Start key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/)."
+    Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
+  GlobalNetworkName:
+    Description: AWS CloudWAN Global Network Name
+    Default: "meraki_gn"
+    Type: String
+  MerakiEventBusName:
+    Description: Name of CustomEventBus for EventBridge
+    Default: "MerakiEventBus"
+    Type: String
+
+Conditions:
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+
+Resources:
+  MerakiEventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Ref MerakiEventBusName
+
+  CreateGlobalNetworkFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/create_global_network.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+  
+  DescribeGlobalNetworksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/describe_global_network.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+  
+  CreateCoreNetworkFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/create_core_network.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+  
+  DescribeCoreNetworksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/describe_core_network.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+  
+  UpdateNetworkPolicyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/update_network_policy.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+  ExecuteCoreNetworkChangeSetFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/execute_core_network_change_set.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+
+  GetNetworkPolicyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_network_policy_status.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AWSAccountManagementReadOnlyAccess
+  
+  CreateVpcAttachmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/create_vpc_attachment.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+  
+  GetVpcAttachmentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_vpc_attachment.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AWSAccountManagementReadOnlyAccess
+
+  CreateStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: State machine to create meraki cloudwan global network
+        StartAt: Create global network
+        States:
+          Create global network:
+            Type: Task
+            Resource: !GetAtt CreateGlobalNetworkFunction.Arn
+            ResultPath: $.GlobalNetworkId
+            Next: Wait 10 seconds for global network
+          Wait 10 seconds for global network:
+            Type: Wait
+            Seconds: 10
+            Next: Get global network status
+          Get global network status:
+            Type: Task
+            Resource: !GetAtt DescribeGlobalNetworksFunction.Arn
+            ResultPath: $.GlobalNetworkStatus
+            Next: Global network completed?
+          Global network completed?:
+            Type: Choice
+            Choices:
+            - Variable: "$.GlobalNetworkStatus"
+              StringEquals: AVAILABLE
+              Next: Create core network
+            - Variable: "$.GlobalNetworkStatus"
+              StringEquals: FAILED
+              Next: Failed
+            Default: Wait 10 seconds for global network
+          Create core network:
+            Type: Task
+            Resource: !GetAtt CreateCoreNetworkFunction.Arn
+            ResultPath: $.CoreNetworkId
+            Next: Wait 10 seconds for core network
+          Wait 10 seconds for core network:
+            Type: Wait
+            Seconds: 10
+            Next: Get core network status
+          Get core network status:
+            Type: Task
+            Resource: !GetAtt DescribeCoreNetworksFunction.Arn
+            ResultPath: $.CoreNetworkStatus
+            Next: Core network completed?
+          Core network completed?:
+            Type: Choice
+            Choices:
+            - Variable: "$.CoreNetworkStatus"
+              StringEquals: AVAILABLE
+              Next: Update network policy
+            - Variable: "$.CoreNetworkStatus"
+              StringEquals: FAILED
+              Next: Failed
+            Default: Wait 10 seconds for core network
+          Update network policy:
+            Type: Task
+            Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyVersionId
+            Next: Wait 10 seconds for network policy
+          Wait 10 seconds for network policy:
+            Type: Wait
+            Seconds: 10
+            Next: Get policy status
+          Get policy status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy ready to execute?
+          Network policy ready to execute?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: READY_TO_EXECUTE
+              Next: Execute core network change set
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 10 seconds for network policy
+          Execute core network change set:
+            Type: Task
+            Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
+            ResultPath: $.ChangeSetResponse
+            Next: Wait 60 seconds for execute core network changeset
+          Wait 60 seconds for execute core network changeset:
+            Type: Wait
+            Seconds: 60
+            Next: Get network policy changeset status
+          Get network policy changeset status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy change set executed?
+          Network policy change set executed?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: EXECUTION_SUCCEEDED
+              Next: Create Vpc Attachment
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 60 seconds for execute core network changeset
+          Create Vpc Attachment:
+            Type: Task
+            Resource: !GetAtt CreateVpcAttachmentFunction.Arn
+            ResultPath: $.Destinations
+            Next: Wait 60 seconds for attachment creation
+          Wait 60 seconds for attachment creation:
+            Type: Wait
+            Seconds: 60
+            Next: Get vpc attachment status 
+          Get vpc attachment status:
+            Type: Task
+            Resource: !GetAtt GetVpcAttachmentFunction.Arn
+            ResultPath: $.VpcAttachmentState
+            Next: Ready to update network policy?
+          Ready to update network policy?:
+            Type: Choice
+            Choices:
+            - Variable: "$.VpcAttachmentState"
+              StringEquals: AVAILABLE
+              Next: Update network policy with attachment
+            - Variable: "$.VpcAttachmentState"
+              StringEquals: FAILED
+              Next: Failed
+            Default: Wait 60 seconds for attachment creation
+          Update network policy with attachment:
+            Type: Task
+            Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
+            Parameters:
+              Destinations.$: "$.Destinations"
+              CoreNetworkId.$: "$.CoreNetworkId"
+            ResultPath: $.NetworkPolicyVersionId
+            Next: Wait 10 seconds for attachment network policy
+          Wait 10 seconds for attachment network policy:
+            Type: Wait
+            Seconds: 10
+            Next: Get attachment network policy status
+          Get attachment network policy status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Attachment Network policy ready?
+          Attachment Network policy ready?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: READY_TO_EXECUTE
+              Next: Execute core network changeset with attachment
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 10 seconds for attachment network policy
+          Execute core network changeset with attachment:
+            Type: Task
+            Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
+            ResultPath: $.ChangeSetResponse
+            Next: Wait 60 seconds for execute core network changeset with attachment
+          Wait 60 seconds for execute core network changeset with attachment:
+            Type: Wait
+            Seconds: 60
+            Next: Get attachment network policy changeset status
+          Get attachment network policy changeset status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Attachment network policy change set ready to execute?
+          Attachment network policy change set ready to execute?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: EXECUTION_SUCCEEDED
+              Next: Done
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 60 seconds for execute core network changeset with attachment
+          Done:
+            Type: Pass
+            End: true
+          Failed:
+            Type: Pass
+            End: true
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CreateGlobalNetworkFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DescribeGlobalNetworksFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CreateCoreNetworkFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DescribeCoreNetworksFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref UpdateNetworkPolicyFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetNetworkPolicyFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CreateVpcAttachmentFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetVpcAttachmentFunction
+      
+      Events:
+        CreateNetworkRule:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref MerakiEventBus
+            InputPath: $.detail
+            Pattern:
+              source:
+                - com.aws.merakicloudwanquickstart
+              detail-type:
+                - New meraki global network requested
+              account:
+                - !Ref AWS::AccountId
+                
+  UpdateStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Definition:
+        Comment: State machine to update meraki cloudwan global network
+        StartAt: Update network policy
+        States:
+          Update network policy:
+            Type: Task
+            Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyVersionId
+            Next: Wait 10 seconds for network policy
+          Wait 10 seconds for network policy:
+            Type: Wait
+            Seconds: 10
+            Next: Get policy status
+          Get policy status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy ready to execute?
+          Network policy ready to execute?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: READY_TO_EXECUTE
+              Next: Execute core network change set
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 10 seconds for network policy
+          Execute core network change set:
+            Type: Task
+            Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
+            ResultPath: $.ChangeSetResponse
+            Next: Wait 60 seconds for execute core network changeset
+          Wait 60 seconds for execute core network changeset:
+            Type: Wait
+            Seconds: 60
+            Next: Get network policy changeset status
+          Get network policy changeset status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy change set executed?
+          Network policy change set executed?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: EXECUTION_SUCCEEDED
+              Next: Done
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 60 seconds for execute core network changeset
+          Done:
+            Type: Pass
+            End: true
+          Failed:
+            Type: Pass
+            End: true
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName: !Ref UpdateNetworkPolicyFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetNetworkPolicyFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
+      Events:
+        UpdateNetworkRule:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref MerakiEventBus
+            InputPath: $.detail
+            Pattern:
+              source:
+                - com.aws.merakicloudwanquickstart
+              detail-type:
+                - update global network requested
+              account:
+                - !Ref AWS::AccountId
+##
+##
+## Delete State Machine Resources
+  
+  DSMWaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    # DependsOn: 
+    Properties:
+      Handle: !Ref DSMWaitHandle
+      Timeout: 300
+      Count: 1
+  
+  DSMWaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  DSMCustomResource:
+    Type: Custom::CloudWanLambda
+    DependsOn: 
+      - CloudWanDeleteStepFunction
+    Properties:
+      ServiceToken: !GetAtt DSMCustomResourceLambda.Arn
+      WaitHandle: !Ref DSMWaitHandle
+      #add !Ref globalnetworkname
+
+
+  DSMCustomResourceLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Lambda for DSMCustomResource
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt DSMCustomResourceLambdaRole.Arn
+      Timeout: 300
+      Code:
+        ZipFile: !Sub | 
+          import boto3
+          import json
+          import cfnresponse
+          from botocore.vendored import requests
+          sfn = boto3.client('stepfunctions')
+
+          def handler(event, context):
+            print('Received event: %s' % json.dumps(event))
+            status = cfnresponse.SUCCESS
+            responseData = {}
+            try:
+              if event['RequestType'] == 'Create':
+                ##eventually, needs to call the create 'step_functions
+                ##for now,just pass in the waithandle token to say nothing needs to be waited on
+                print(event['ResourceProperties']['WaitHandle'])
+                requests_data=json.dumps(dict(Status='SUCCESS',Reason='wait timer not needed',UniqueId='12345',Data='Custom Resource Lambda')).encode('utf-8')
+                response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
+                print (response)       
+                print('Nothing to do') 
+              if event['RequestType'] == 'Delete':
+                response = sfn.start_execution(
+                  stateMachineArn='${CloudWanDeleteStepFunction}',
+                  input=json.dumps(event)
+                )
+                responseData = {'executionArn': response['executionArn']}                    
+              else:
+                print('Nothing to do')                  
+            except Exception as e:
+              print(e)
+              status = cfnresponse.FAILED
+            finally:
+              cfnresponse.send(event, context, status, responseData)
+  
+  DSMCustomResourceLambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+            - sts:AssumeRole
+        ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Path: "/"
+        Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*"
+
+  CloudWanDeleteStepFunction:
+    Type: AWS::StepFunctions::StateMachine
+    DependsOn: 
+    - CallbackLambda
+    - DeleteAttachmentsDSMFunction
+    - DeleteCoreDSMFunction
+    - DeleteGlobalDSMFunction
+    - DescribeNetworkDSMFunction
+    - GetAttachmentStatusDSMFunction
+    - GetCoreStatusDSMFunction
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "Comment": "A description of my state machine",
+          "StartAt": "Describe Network",
+          "States": {
+            "Describe Network": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${DescribeNetworkDSMFunction.Arn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Delete Attachments",
+              "ResultPath": "$.networkDetails"
+            },
+            "Delete Attachments": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${DeleteAttachmentsDSMFunction.Arn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Wait 1 minute",
+              "ResultPath": "$.attachmentsDeleteExecuted"
+            },
+            "Wait 1 minute": {
+              "Type": "Wait",
+              "Seconds": 10,
+              "Next": "Get Attachment Status"
+            },
+            "Get Attachment Status": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${GetAttachmentStatusDSMFunction.Arn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Attachments Deleted?",
+              "ResultPath": "$.attachmentStatus"
+            },
+            "Attachments Deleted?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.attachmentStatus.Payload",
+                  "StringEquals": "DELETED",
+                  "Next": "Delete Core Network"
+                }
+              ],
+              "Default": "Wait 1 minute"
+            },
+            "Delete Core Network": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${DeleteCoreDSMFunction.Arn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Wait 5 Minutes",
+              "ResultPath": "$.coreDeleteExecuted"
+            },
+            "Wait 5 Minutes": {
+              "Type": "Wait",
+              "Seconds": 10,
+              "Next": "Get Core Network Status"
+            },
+            "Get Core Network Status": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${GetCoreStatusDSMFunction.Arn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "Next": "Core Network Deleted?",
+              "ResultPath": "$.coreStatus"
+            },
+            "Core Network Deleted?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.coreStatus.Payload",
+                  "StringEquals": "DELETED",
+                  "Next": "Delete Global Network"
+                }
+              ],
+              "Default": "Wait 5 Minutes"
+            },
+            "Delete Global Network": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${DeleteGlobalDSMFunction.Arn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "ResultPath": "$.globalDeleteExecuted",
+              "Next": "CallBack Lambda"
+            },
+            "CallBack Lambda": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${CallbackLambda.Arn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException"
+                  ],
+                  "IntervalSeconds": 2,
+                  "MaxAttempts": 6,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true,
+              "ResultPath": "$.callback"
+            }
+          }
+        }
+
+
+  StatesExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+  StatesExecutionPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: StatesExecutionPolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: "lambda:InvokeFunction"
+            Resource: "*"
+      Roles:
+        - !Ref StatesExecutionRole
+
+  CallbackLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Sends callback to CloudFormation to continue after Delete Step FUnction
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import json
+          from botocore.vendored import requests
+
+          def handler(event, context):
+            print('Received event: %s' % json.dumps(event))
+            print(event['ResourceProperties']['WaitHandle'])
+            try:
+              requests_data=json.dumps(dict(Status='SUCCESS',Reason='Step Function Succeeded',UniqueId='12345',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
+              print (response)
+            except Exception as e:
+              print (e)
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt CallbackRole.Arn
+      Timeout: 300
+
+  CallbackRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: "/"
+
+
+
+  DeleteAttachmentsDSMFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/delete_attachments_delete_state_machine.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+      - AmazonEC2ReadOnlyAccess
+
+
+  DeleteCoreDSMFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/delete_core_delete_state_machine.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+      - AmazonEC2ReadOnlyAccess
+
+
+  DeleteGlobalDSMFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/delete_global_delete_state_machine.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+      - AmazonEC2ReadOnlyAccess
+
+
+  DescribeNetworkDSMFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/describe_network_delete_state_machine.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+      - AmazonEC2ReadOnlyAccess
+
+  GetAttachmentStatusDSMFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_attachments_status_delete_state_machine.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+      - AmazonEC2ReadOnlyAccess
+
+  GetCoreStatusDSMFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri:
+        Bucket: !Sub
+                - "${S3Bucket}"
+                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_core_status_delete_state_machine.zip"
+      Policies:
+      - AWSNetworkManagerFullAccess
+      - AdministratorAccess
+      - AmazonEC2ReadOnlyAccess
+
+##End of Delete State Machine Resources
+##
+##
+
+Outputs:
+  CreateStateMachine:
+    Value: !Ref CreateStateMachine
+    Description: Create network Step Function Arn
+  UpdateStateMachine:
+    Value: !Ref UpdateStateMachine
+    Description: Update network Step Function Arn
+  MerakiEventBusArn:
+    Description: The ARN of the central event bus
+    Value: !GetAtt MerakiEventBus.Arn
