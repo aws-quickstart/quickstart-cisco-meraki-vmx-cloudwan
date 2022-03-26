@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-   This template deploys a lambda to monitor the state of the vMX and update the CW step functions.
+   This template deploys a lambda to monitor the state of the vMX and update the CW step functions.(qs-1srtkbc3s)
 Parameters:
   VPCID:
     Description: 'ID of the VPC (e.g., vpc-0343606e)'
