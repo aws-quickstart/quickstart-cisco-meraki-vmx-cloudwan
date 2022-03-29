@@ -162,11 +162,12 @@ Resources:
                 Action:
                   - "events:*"
                 Resource: !Sub arn:${AWS::Partition}:events:*:*:*
-  vMXRTLambdaObject:
+
+  CreateLambdaObject:
     Properties:
       ServiceToken:
         Fn::GetAtt:
-        - vMXRTLambdaFunction
+        - CreateLambdaFunction
         - Arn
       meraki_org_id: !Ref 'MerakiOrgID'
       rt_id: !Ref 'SDWANVPCRTID'
@@ -188,7 +189,8 @@ Resources:
       event_bus_name: !Ref 'MerakiEventBusName'
       create_state_machine: !Ref 'CreateStateMachineARN'
     Type: AWS::CloudFormation::CustomResource
-  vMXRTLambdaFunction:
+
+  CreateLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.main
@@ -197,9 +199,67 @@ Resources:
       Runtime: python3.7
       Code:
         S3Bucket: !GetAtt 'CopyLambdaStack.Outputs.LambdaZipsBucket'
-        S3Key: !Sub "${QSS3KeyPrefix}functions/packages/lambda.zip"
+        S3Key: !Sub "${QSS3KeyPrefix}functions/packages/meraki_create_lambda.zip"
       MemorySize: 3008
   
+  PollingLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: lambda_function.main
+      Timeout: 60
+      Role: !GetAtt 'LambdaBasicExecutionRole.Arn'
+      Runtime: python3.7
+      Code:
+        S3Bucket: !GetAtt 'CopyLambdaStack.Outputs.LambdaZipsBucket'
+        S3Key: !Sub "${QSS3KeyPrefix}functions/packages/meraki_polling_lambda.zip"
+      MemorySize: 3008
+      Environment:
+        Variables:
+          meraki_org_id: !Ref 'MerakiOrgID'
+          rt_id: !Ref 'SDWANVPCRTID'
+          vmx1_tag: !Ref 'vMX1MerakiNetworkTag'
+          vmx2_tag: !Ref 'vMX2MerakiNetworkTag'
+          vpc_id: !Ref 'VPCID'
+          vpc_arn: !Sub 
+                    - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VPC_ID}
+                    - VPC_ID: !Ref 'VPCID'
+          az1_subnet_arn: !Sub
+                    - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ1SubnetID}
+                    - AZ1SubnetID: !Ref 'AvailabilityZone1SubnetID'
+          az2_subnet_arn: !Sub
+                    - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ2SubnetID}
+                    - AZ2SubnetID: !Ref 'AvailabilityZone2SubnetID'
+          asn_range: !Ref 'AmazonASNRange'
+          global_network_name: !Ref 'GlobalNetworkName'
+          regions_list: !Ref 'RegionsList'
+          event_bus_name: !Ref 'MerakiEventBusName'
+          update_state_machine: !Ref 'UpdateStateMachineARN'
+  
+  PollingLambdaSchedulePermission:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Sub ${PollingLambda.Arn}
+      Principal: 'events.amazonaws.com'
+      SourceArn: !Sub ${LambdaSchedule.Arn}
+    DependsOn:
+      - LambdaSchedule
+
+  PollingLambdaSchedule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: >
+        A schedule for the TGW Route Monitor Lambda function..
+      ScheduleExpression: !Ref LambdaRate
+      State: ENABLED
+      Targets:
+        - Arn: !Sub ${vMXTransitGatewayRTLambda.Arn}
+          Id: LambdaSchedule
+    DependsOn:
+      - PollingLambdaFunction
+  
 Outputs:
-  CorenetworkID:
-    Value: !Ref 'vMXRTLambdaFunction'
+  CustomResourceLambda:
+    Value: !Ref 'CreateLambdaFunction'
+  PollingLambda:
+    Value: !Ref 'PollingLambdaFunction'

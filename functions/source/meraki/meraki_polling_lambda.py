@@ -16,14 +16,6 @@ logging.basicConfig(stream = sys.stdout)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-#ORG_ID = os.environ['MERAKI_ORG_ID']
-#TGW_RT_ID = os.environ['TGW_RT_ID']
-#TGW_ATTACH_ID = os.environ['TGW_ATTACH_ID']
-#RT_ID = os.environ['RT_ID']
-#VMX1_TAG = os.environ['vMX1Tag']
-#VMX2_TAG = os.environ['vMX2Tag']
-#VPC_ID = os.environ['VPC_ID']
-
 
 def get_meraki_key():
     secret_name = 'MerakiAPIKey'
@@ -190,13 +182,13 @@ def get_ec2_instance_id(instance_tag):
     else:
         return instance_id[0]
 
-def create_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, regions_list, event_bus_name, create_state_machine):
+def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, regions_list, event_bus_name, update_state_machine):
     network_name = global_network_name
     region = regions_list
     asnrange = asn_range
     sfn = boto3.client('stepfunctions')
     input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asnrange], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
-    statefunction_arn = create_state_machine
+    statefunction_arn = update_state_machine
     response = sfn.start_execution(
         stateMachineArn=statefunction_arn,
         input= input_data
@@ -250,7 +242,7 @@ def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_ar
     else:
         logger.info ('vMX1 and vMX2 are BOTH offline')
         #TODO: Cloudwatch enhancement to generate alerts when both vMXs are offline
-    create_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, regions_list, event_bus_name, create_state_machine)
+    create_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, regions_list, event_bus_name, update_state_machine)
 def timeout(event, context):
     logging.error('Execution is about to time out, sending failure response to CloudFormation')
     cfnresponse.send(event, context, cfnresponse.FAILED, {}, None)
@@ -258,38 +250,27 @@ def timeout(event, context):
 def main(event, context):
     # This lambda function monitors the state of the vMX instances and updates the SDWAN VPC and TGW route tables accordingly.
     # The function gets instatiated on a periodic Cloudwatch event, the frequency of the periodic check is configurable and taken as an input for the cft templates. 
-    if event['RequestType'] == 'Delete':
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, None)
-        return
-    # make sure we send a failure to CloudFormation if the function is going to timeout
-    timer =  threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 0.5, timeout, args=[event, context])
-    timer.start()
-    status = cfnresponse.SUCCESS    
 
     try:
         logger.info('Lambda Execution: Executed on event {0}'.format(event))
-        org_id = event['ResourceProperties']['meraki_org_id']
-        rt_id = event['ResourceProperties']['rt_id']
-        vmx1_tag = event['ResourceProperties']['vmx1_tag']
-        vmx2_tag = event['ResourceProperties']['vmx2_tag']
-        vpc_id = event['ResourceProperties']['vpc_id']
-        vpc_arn = event['ResourceProperties']['vpc_arn']
-        az1_subnet_arn = event['ResourceProperties']['az1_subnet_arn']
-        az2_subnet_arn = event['ResourceProperties']['az2_subnet_arn']
-        asn_range = event['ResourceProperties']['asn_range']
-        global_network_name = event['ResourceProperties']['global_network_name']
-        regions_list = event['ResourceProperties']['regions_list']
-        event_bus_name = event['ResourceProperties']['event_bus_name']
-        create_state_machine = event['ResourceProperties']['create_state_machine']
-        update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, regions_list, event_bus_name, create_state_machine)
+        org_id = os.environ['meraki_org_id']
+        rt_id = os.environ['rt_id']
+        vmx1_tag = os.environ['vmx1_tag']
+        vmx2_tag = os.environ['vmx2_tag']
+        vpc_id = os.environ['vpc_id']
+        vpc_arn = os.environ['vpc_arn']
+        az1_subnet_arn = os.environ['az1_subnet_arn']
+        az2_subnet_arn = os.environ['az2_subnet_arn']
+        asn_range = os.environ['asn_range']
+        global_network_name = os.environ['global_network_name']
+        regions_list = os.environ['regions_list']
+        event_bus_name = os.environ['event_bus_name']
+        update_state_machine = os.environ['create_state_machine']
+        update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, regions_list, event_bus_name, updt sate_state_machine)
 
     except Exception as e:
         logging.error('Exception: %s' % e, exc_info=True)
         status = cfnresponse.FAILED
     
-    finally:
-        timer.cancel()
-        cfnresponse.send(event, context, status, {}, None)
-
 if __name__ == "__main__":   
     main('', '')
