@@ -309,6 +309,97 @@ Resources:
               StringEquals: FAILED_GENERATION
               Next: Failed
             Default: Wait 60 seconds for execute core network changeset
+          Done:
+            Type: Pass
+            End: true
+          Failed:
+            Type: Pass
+            End: true
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CreateGlobalNetworkFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DescribeGlobalNetworksFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CreateCoreNetworkFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DescribeCoreNetworksFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref UpdateNetworkPolicyFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetNetworkPolicyFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
+      
+      Events:
+        CreateNetworkRule:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref MerakiEventBus
+            InputPath: $.detail
+            Pattern:
+              source:
+                - com.aws.merakicloudwanquickstart
+              detail-type:
+                - New meraki global network requested
+              account:
+                - !Ref AWS::AccountId
+                
+  CreateNetworkStateMachineAdditionalRegion:
+    Type: AWS:Serverless::StateMachine
+    Properties:
+      Definition:
+          Comment: State machine to update meraki global cloudwan network with additional region
+          StartAt: Update network policy
+          States:
+          Update network policy:
+            Type: Task
+            Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyVersionId
+            Next: Wait 10 seconds for network policy
+          Wait 10 seconds for network policy:
+            Type: Wait
+            Seconds: 10
+            Next: Get policy status
+          Get policy status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy ready to execute?
+          Network policy ready to execute?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: READY_TO_EXECUTE
+              Next: Execute core network change set
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 10 seconds for network policy
+          Execute core network change set:
+            Type: Task
+            Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
+            ResultPath: $.ChangeSetResponse
+            Next: Wait 60 seconds for execute core network changeset
+          Wait 60 seconds for execute core network changeset:
+            Type: Wait
+            Seconds: 60
+            Next: Get network policy changeset status
+          Get network policy changeset status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy change set executed?
+          Network policy change set executed?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: EXECUTION_SUCCEEDED
+              Next: Create Vpc Attachment
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: FAILED_GENERATION
+              Next: Failed
+            Default: Wait 60 seconds for execute core network changeset
           Create Vpc Attachment:
             Type: Task
             Resource: !GetAtt CreateVpcAttachmentFunction.Arn
@@ -392,14 +483,6 @@ Resources:
             End: true
       Policies:
       - LambdaInvokePolicy:
-          FunctionName: !Ref CreateGlobalNetworkFunction
-      - LambdaInvokePolicy:
-          FunctionName: !Ref DescribeGlobalNetworksFunction
-      - LambdaInvokePolicy:
-          FunctionName: !Ref CreateCoreNetworkFunction
-      - LambdaInvokePolicy:
-          FunctionName: !Ref DescribeCoreNetworksFunction
-      - LambdaInvokePolicy:
           FunctionName: !Ref UpdateNetworkPolicyFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref GetNetworkPolicyFunction
@@ -411,7 +494,7 @@ Resources:
           FunctionName: !Ref GetVpcAttachmentFunction
       
       Events:
-        CreateNetworkRule:
+        CreateAddtionalRegionNetworkRule:
           Type: EventBridgeRule
           Properties:
             EventBusName: !Ref MerakiEventBus
@@ -420,10 +503,10 @@ Resources:
               source:
                 - com.aws.merakicloudwanquickstart
               detail-type:
-                - New meraki global network requested
+                - New meraki additional region requested
               account:
                 - !Ref AWS::AccountId
-                
+
   UpdateStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
