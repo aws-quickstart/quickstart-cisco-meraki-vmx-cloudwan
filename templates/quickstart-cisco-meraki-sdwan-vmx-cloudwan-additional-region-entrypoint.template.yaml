@@ -1,7 +1,7 @@
 ---
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Cisco Meraki- Main Stack- Deploys two vMX instances in different avalaibility zones along with a new SDWAN VPC and a CloudWAN global network. 
+  Cisco Meraki- Additional Region Stack- Deploys two vMX instances in different avalaibility zones along with a new SDWAN VPC and the resources required to communicate with cloudWAN Network. 
   **WARNING** You will be billed for the AWS resources used if you create a stack from this template. (qs-1srtkbc1c)
 Metadata:
   QuickStartDocumentation:
@@ -27,9 +27,9 @@ Metadata:
           - AvailabilityZone1CIDR
           - AvailabilityZone2CIDR
           - AmazonSideASNRange
-          - GlobalNetworkName
+    #      - GlobalNetworkName
           - AdditionalRegions
-          - MerakiEventBusName
+          - BaseRegionStackName
       - Label:
           default: EC2 configuration
         Parameters:
@@ -84,12 +84,12 @@ Metadata:
         default: CloudWatch Events rule rate
       AmazonSideASNRange:
         default: CloudWAN ASN Range
-      GlobalNetworkName:
-        default: CloudWAN Global Network name
-      AdditionalRegions:
-        default: Additional regions for Meraki global network, excluding the region in which the template is being deployed
-      MerakiEventBusName:
-        default: "MerakiEventBus"
+      # GlobalNetworkName:
+      #   default: CloudWAN Global Network name
+      # AdditionalRegions:
+      #   default: Additional regions for Meraki global network, excluding the region in which the template is being deployed
+      BaseRegionStackName:
+        default: "Base Region Stack Name"
 Parameters:
   MerakiOrgID:
     Description: Meraki organization ID.
@@ -205,43 +205,16 @@ Parameters:
     Description: On the Meraki dashboard, the vMX network tag for the second vMX instance.
     Type: String
     Default: vMX2
-  AdditionalRegions: 
-    Description: List of additional regions you want part of the global network  
-    Type: CommaDelimitedList
-    Default: ""
-    AllowedValues:
-      - us-east-2
-      - us-east-1
-      - us-west-1
-      - us-west-2
-      - ca-central-1
-      - eu-central-1	
-      - eu-west-1	
-      - eu-west-2	
-      - eu-south-1	
-      - eu-west-3	
-      - eu-north-1	
-      - ap-east-1
-      - ap-southeast-1	
-      - ap-southeast-2	
-      - ap-northeast-2	
-      - ap-northeast-1	
-      - ap-south-1	
-      - sa-east-1	
-      - me-south-1
-      - af-south-1		
-    Description: "list of regions"
-  GlobalNetworkName:
-    Description: AWS CloudWAN Global Network Name
-    Default: "meraki_gn"
-    Type: String
+  # GlobalNetworkName:
+  #   Description: AWS CloudWAN Global Network Name
+  #   Default: "meraki_gn"
+  #   Type: String
   AmazonASNRange:
     Description: Autonomous System Number (ASN) for CloudWAN Network. 
     Default: "65000-65500"
     Type: String
-  MerakiEventBusName:
-    Description: Name of CustomEventBus for EventBridge
-    Default: "MerakiEventBus"
+  BaseRegionStackName:
+    Description: Enter either the Base Region entrypoint or workload Stack Name
     Type: String
 
 Conditions:
@@ -273,7 +246,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-workload.template.yaml
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-workload-additional-region.template.yaml
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -321,11 +294,10 @@ Resources:
           Ref: QSS3BucketRegion 
         QSS3KeyPrefix:
           Ref: QSS3KeyPrefix
-        RegionList: !Join
-          - ','
-          - Ref: "AdditionalRegions"
-        MerakiEventBusName:
-          Ref: MerakiEventBusName
+        # RegionList: !Join
+        #   - ','
+        #   - Ref: "AdditionalRegions"
+        BaseRegionStackName: !Ref BaseRegionStackName
         
 Outputs:
   VPCID:
@@ -346,44 +318,12 @@ Outputs:
       Fn::GetAtt:
       - WorkloadStack
       - Outputs.vMX2InstanceID
-  CorenetworkID:
-    Description: Core Network ID.
-    Value:
-      Fn::GetAtt:
-      - WorkloadStack
-      - Outputs.CorenetworkID
-  MerakiEventBusARN:
-    Description: The Meraki Event Bus ARN
-    Value:
-      Fn::GetAtt:
-      - WorkloadStack
-      - Outputs.MerakiEventBusArn
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-MerakiEventBusArn'
-  CreateNetworkStateMachineAdditionalRegion:
-    Description: The create network step function arn for additional region 
-    Value:
-      Fn::GetAtt:
-      - WorkloadStack
-      - Outputs.CreateNetworkStateMachineAdditionalRegion
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-CreateNetworkStateMachineAdditionalRegion'
-  BaseRegion:
-    Description: Base Region value
-    Value: !Ref "AWS::Region"
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-BaseRegion'
-  MerakiEventBusName:
-    Description: The Meraki Event Bus Name
-    Value: !Ref MerakiEventBusName
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-MerakiEventBusName'
-  
-  
+  # CorenetworkID:
+  #   Description: Core Network ID.
+  #   Value:
+  #     Fn::GetAtt:
+  #     - WorkloadStack
+  #     - Outputs.CorenetworkIDa
   Postdeployment:
     Description: See the deployment guide for postdeployment steps.
     Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.s

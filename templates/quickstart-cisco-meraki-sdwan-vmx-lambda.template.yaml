@@ -58,13 +58,13 @@ Parameters:
       - rate(10 minutes)
       - rate(60 minutes)
     Type: String
-  RegionsList: 
-    Type: String
-    Default: "us-east-1"
-    AllowedValues:
-      - us-east-1
-      - us-west-1
-    Description: "list of regions"
+  # RegionsList: 
+  #   Type: String
+  #   Default: "us-east-1"
+  #   AllowedValues:
+  #     - us-east-1
+  #     - us-west-1
+  #   Description: "list of regions"
   GlobalNetworkName:
     Description: AWS CloudWAN Global Network Name
     Default: "meraki_gn"
@@ -185,6 +185,7 @@ Resources:
                 - AZ2SubnetID: !Ref 'AvailabilityZone2SubnetID'
       asn_range: !Ref 'AmazonASNRange'
       global_network_name: !Ref 'GlobalNetworkName'
+      # we'll need to change the way regions list is passed for latest multi-regio design
       regions_list: !Ref 'RegionsList'
       event_bus_name: !Ref 'MerakiEventBusName'
       create_state_machine: !Ref 'CreateStateMachineARN'
@@ -231,6 +232,7 @@ Resources:
                     - AZ2SubnetID: !Ref 'AvailabilityZone2SubnetID'
           asn_range: !Ref 'AmazonASNRange'
           global_network_name: !Ref 'GlobalNetworkName'
+           # we'll need to change the way regions list is passed for latest multi-regio design
           regions_list: !Ref 'RegionsList'
           event_bus_name: !Ref 'MerakiEventBusName'
           update_state_machine: !Ref 'UpdateStateMachineARN'
