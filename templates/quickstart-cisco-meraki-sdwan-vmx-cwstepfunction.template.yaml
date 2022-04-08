@@ -1046,6 +1046,9 @@ Outputs:
   UpdateStateMachine:
     Value: !Ref UpdateStateMachine
     Description: Update network Step Function Arn
+  CreateNetworkStateMachineAdditionalRegion:
+    Value: !Ref CreateNetworkStateMachineAdditionalRegion
+    Description: Create network additional region Step Function Arn
   MerakiEventBusArn:
     Description: The ARN of the central event bus
     Value: !GetAtt MerakiEventBus.Arn
