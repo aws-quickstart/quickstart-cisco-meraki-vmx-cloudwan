@@ -195,15 +195,20 @@ def create_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
     region = regions_list
     asnrange = asn_range
     sfn = boto3.client('stepfunctions')
-    input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asnrange], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
-    statefunction_arn = create_state_machine
-    response = sfn.start_execution(
-        stateMachineArn=statefunction_arn,
-        input= input_data
-        )
-    responseData = {'executionArn': response['esecutionArn']}
+    #input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asnrange], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+    ec2 = boto3.client('events', region_name=region)
+    response = ec2.put_events(
+        Entries=[
+        {
+            'Source': 'com.aws.merakicloudwanquickstart',
+            'DetailType': 'New Meraki global network requested',
+            'Detail': json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asnrange], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+            'EventBusName': 'MerakiEventBus'
+        }
+        ]
+    )
 
-    return responseData
+    return response
 
 def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, regions_list, event_bus_name, create_state_machine):
     org_id = org_id
