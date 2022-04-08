@@ -58,17 +58,7 @@ Globals:
     Timeout: 900
 Metadata:
   AWS::CloudFormation::Interface:
-    ParameterLabels:
-      RegionsList:
-        default: region name
 Parameters:
-  RegionsList: 
-    Type: String
-    Default: "us-east-1"
-    AllowedValues:
-      - us-east-1
-      - us-west-1
-    Description: "list of regions"
   QSS3BucketName:
     AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
     ConstraintDescription: "Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."

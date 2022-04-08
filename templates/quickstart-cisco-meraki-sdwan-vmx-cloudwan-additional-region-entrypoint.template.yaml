@@ -26,9 +26,6 @@ Metadata:
           - VPCCIDR
           - AvailabilityZone1CIDR
           - AvailabilityZone2CIDR
-          - AmazonSideASNRange
-    #      - GlobalNetworkName
-          - AdditionalRegions
           - BaseRegionStackName
       - Label:
           default: EC2 configuration
@@ -78,16 +75,8 @@ Metadata:
         default: Quick Start S3 bucket Region
       QSS3KeyPrefix:
         default: Quick Start S3 key prefix
-      AmazonSideASN:
-        default: Transit gateway ASN
       LambdaRate:
         default: CloudWatch Events rule rate
-      AmazonSideASNRange:
-        default: CloudWAN ASN Range
-      # GlobalNetworkName:
-      #   default: CloudWAN Global Network name
-      # AdditionalRegions:
-      #   default: Additional regions for Meraki global network, excluding the region in which the template is being deployed
       BaseRegionStackName:
         default: "Base Region Stack Name"
 Parameters:
@@ -186,9 +175,6 @@ Parameters:
     Description: EC2 key pair name.
     ConstraintDescription: Must be the name of an existing EC2 key pair. vMX instances launch with this key pair.
     Type: "AWS::EC2::KeyPair::KeyName"
-  AmazonSideASN:
-    Description: Autonomous System Number (ASN) for the transit gateway.
-    Type: String
   LambdaRate:
     Description: How often the CloudWatch Events rule runs. The rule invokes AWS Lambda to update the VPC and transit gateway route tables. 
     Default: rate(10 minutes)
@@ -205,14 +191,6 @@ Parameters:
     Description: On the Meraki dashboard, the vMX network tag for the second vMX instance.
     Type: String
     Default: vMX2
-  # GlobalNetworkName:
-  #   Description: AWS CloudWAN Global Network Name
-  #   Default: "meraki_gn"
-  #   Type: String
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Default: "65000-65500"
-    Type: String
   BaseRegionStackName:
     Description: Enter either the Base Region entrypoint or workload Stack Name
     Type: String
@@ -284,8 +262,6 @@ Resources:
           Fn::GetAtt:
           - VPCStack 
           - Outputs.PublicSubnetRouteTable
-        AmazonSideASN:
-          Ref: AmazonSideASN
         LambdaRate:
           Ref: LambdaRate
         QSS3BucketName:
@@ -294,9 +270,6 @@ Resources:
           Ref: QSS3BucketRegion 
         QSS3KeyPrefix:
           Ref: QSS3KeyPrefix
-        # RegionList: !Join
-        #   - ','
-        #   - Ref: "AdditionalRegions"
         BaseRegionStackName: !Ref BaseRegionStackName
         
 Outputs:
@@ -318,12 +291,7 @@ Outputs:
       Fn::GetAtt:
       - WorkloadStack
       - Outputs.vMX2InstanceID
-  # CorenetworkID:
-  #   Description: Core Network ID.
-  #   Value:
-  #     Fn::GetAtt:
-  #     - WorkloadStack
-  #     - Outputs.CorenetworkIDa
+    
   Postdeployment:
     Description: See the deployment guide for postdeployment steps.
     Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.s

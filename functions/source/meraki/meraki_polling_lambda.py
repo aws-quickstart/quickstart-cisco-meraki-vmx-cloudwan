@@ -182,26 +182,24 @@ def get_ec2_instance_id(instance_tag):
     else:
         return instance_id[0]
 
-def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, regions_list, event_bus_name, update_state_machine):
+def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, event_bus_name, base_region_name):
     network_name = global_network_name
-    region = regions_list
-    asnrange = asn_range
-    sfn = boto3.client('stepfunctions')
-    input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asnrange], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
-    ec2 = boto3.client('events', region_name=region)
+    region = os.environ['AWS_REGION']
+    input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+    ec2 = boto3.client('events', region_name=base_region_name)
     response = ec2.put_events(
         Entries=[
         {
             'Source': 'com.aws.merakicloudwanquickstart',
-            'DetailType': 'New Meraki global network requested',
-            'Detail': json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asnrange], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+            'DetailType': 'update global network requested',
+            'Detail': json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
             'EventBusName': 'MerakiEventBus'
         }
         ]
     )
     return responseData
 
-def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, regions_list, event_bus_name, create_state_machine):
+def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, event_bus_name, base_region_name):
     org_id = org_id
     vmx1_tag = vmx1_tag
     vmx2_tag = vmx2_tag
@@ -246,7 +244,7 @@ def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_ar
     else:
         logger.info ('vMX1 and vMX2 are BOTH offline')
         #TODO: Cloudwatch enhancement to generate alerts when both vMXs are offline
-    create_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, regions_list, event_bus_name, update_state_machine)
+    update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, event_bus_name, base_region_name)
 def timeout(event, context):
     logging.error('Execution is about to time out, sending failure response to CloudFormation')
     cfnresponse.send(event, context, cfnresponse.FAILED, {}, None)
@@ -267,10 +265,9 @@ def main(event, context):
         az2_subnet_arn = os.environ['az2_subnet_arn']
         asn_range = os.environ['asn_range']
         global_network_name = os.environ['global_network_name']
-        regions_list = os.environ['regions_list']
         event_bus_name = os.environ['event_bus_name']
-        update_state_machine = os.environ['create_state_machine']
-        update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, regions_list, event_bus_name, updt sate_state_machine)
+        base_region_name = os.environ['base_region_name']
+        update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, event_bus_name, base_region_name)
 
     except Exception as e:
         logging.error('Exception: %s' % e, exc_info=True)

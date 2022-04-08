@@ -22,7 +22,6 @@ tests:
       vMX2Token: "YOUR-VMX2-TOKEN-FOUND-IN-APPLIANCE-DASHBOARD"
       AmazonSideASN: "65500"
       AmazonSideASNRange: "65000-65500"
-      RegionsList: "us-east-1"
       InstanceType: "c5.xlarge"
       MerakiAPIKey: "YOUR-MERAKI-API-KEY"
       MerakiOrgID: "YOUR-ORG-ID"

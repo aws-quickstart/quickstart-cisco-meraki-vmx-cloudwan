@@ -28,7 +28,6 @@ Metadata:
           - AvailabilityZone2CIDR
           - AmazonSideASNRange
           - GlobalNetworkName
-          - AdditionalRegions
           - MerakiEventBusName
       - Label:
           default: EC2 configuration
@@ -86,8 +85,6 @@ Metadata:
         default: CloudWAN ASN Range
       GlobalNetworkName:
         default: CloudWAN Global Network name
-      AdditionalRegions:
-        default: Additional regions for Meraki global network, excluding the region in which the template is being deployed
       MerakiEventBusName:
         default: "MerakiEventBus"
 Parameters:
@@ -205,32 +202,6 @@ Parameters:
     Description: On the Meraki dashboard, the vMX network tag for the second vMX instance.
     Type: String
     Default: vMX2
-  AdditionalRegions: 
-    Description: List of additional regions you want part of the global network  
-    Type: CommaDelimitedList
-    Default: ""
-    AllowedValues:
-      - us-east-2
-      - us-east-1
-      - us-west-1
-      - us-west-2
-      - ca-central-1
-      - eu-central-1	
-      - eu-west-1	
-      - eu-west-2	
-      - eu-south-1	
-      - eu-west-3	
-      - eu-north-1	
-      - ap-east-1
-      - ap-southeast-1	
-      - ap-southeast-2	
-      - ap-northeast-2	
-      - ap-northeast-1	
-      - ap-south-1	
-      - sa-east-1	
-      - me-south-1
-      - af-south-1		
-    Description: "list of regions"
   GlobalNetworkName:
     Description: AWS CloudWAN Global Network Name
     Default: "meraki_gn"
@@ -321,9 +292,6 @@ Resources:
           Ref: QSS3BucketRegion 
         QSS3KeyPrefix:
           Ref: QSS3KeyPrefix
-        RegionList: !Join
-          - ','
-          - Ref: "AdditionalRegions"
         MerakiEventBusName:
           Ref: MerakiEventBusName
         

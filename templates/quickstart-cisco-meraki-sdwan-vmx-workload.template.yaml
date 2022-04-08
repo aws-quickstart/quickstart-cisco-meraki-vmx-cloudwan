@@ -29,7 +29,6 @@ Metadata:
           - VPCRouteTableID
           - AmazonSideASNRange
           - GlobalNetworkName
-          - RegionsList
           - MerakiEventBusName
       - Label:
           default: EC2 configuration
@@ -87,8 +86,6 @@ Metadata:
         default: CloudWAN ASN Range
       GlobalNetworkName:
         default: CloudWAN Global Network name
-      RegionsList:
-        default: CloudWAN regions list
       MerakiEventBusName:
         default: "MerakiEventBus"
 Parameters:
@@ -194,13 +191,6 @@ Parameters:
       - rate(10 minutes)
       - rate(60 minutes)
     Type: String
-  RegionsList: 
-    Type: String
-    Default: "us-east-1"
-    AllowedValues:
-      - us-east-1
-      - us-west-1
-    Description: "list of regions"
   GlobalNetworkName:
     Description: AWS CloudWAN Global Network Name
     Default: "meraki_gn"
@@ -280,8 +270,6 @@ Resources:
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-          RegionsList:
-            Ref: RegionsList
           QSS3BucketName:
             Ref: QSS3BucketName
           QSS3KeyPrefix:
@@ -329,14 +317,11 @@ Resources:
             Ref: vMX2MerakiNetworkTag
           LambdaRate:
             Ref: LambdaRate
-          RegionsList: 
-            Ref: RegionsList
           MerakiEventBusName:
             Ref: MerakiEventBusName
-          CreateStateMachineARN:
-            Fn::GetAtt:
-            - StepFunctionStack
-            - Outputs.CreateStateMachine
+          BaseRegion: "Yes"
+          BaseRegionName:
+            Ref: AWS::Region
 
 
 Outputs:

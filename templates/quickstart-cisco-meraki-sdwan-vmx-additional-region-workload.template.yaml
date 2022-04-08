@@ -26,11 +26,7 @@ Metadata:
           - VPCID
           - AZ1PublicSubnetID
           - AZ2PublicSubnetID
-          # - AmazonSideASN
           - VPCRouteTableID
-          - AmazonSideASNRange
-          # - GlobalNetworkName
-          # - RegionsList
           - MerakiEventBusArn
       - Label:
           default: EC2 configuration
@@ -80,16 +76,8 @@ Metadata:
         default: Quick Start S3 bucket Region
       QSS3KeyPrefix:
         default: Quick Start S3 key prefix
-      # AmazonSideASN:
-      #   default: CloudWAN ASN
       LambdaRate:
         default: CloudWatch Events rule rate
-      AmazonSideASNRange:
-        default: CloudWAN ASN Range
-      # GlobalNetworkName:
-      #   default: CloudWAN Global Network name
-      # RegionsList:
-      #   default: CloudWAN regions list
       MerakiEventBusArn:
         default: "MerakiEventBusArn"
 Parameters:
@@ -195,29 +183,10 @@ Parameters:
       - rate(10 minutes)
       - rate(60 minutes)
     Type: String
-  # RegionsList: 
-  #   Type: String
-  #   Default: "us-east-1"
-  #   AllowedValues:
-  #     - us-east-1
-  #     - us-west-1
-  #   Description: "list of regions"
-  # GlobalNetworkName:
-  #   Description: AWS CloudWAN Global Network Name
-  #   Default: "meraki_gn"
-  #   Type: String
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Default: "65000-65500"
-    Type: String
-  # AmazonSideASN:
-  #   Description: Autonomous System Number (ASN) for CloudWAN Network. 
-  #   Default: "65500"
-  #   Type: String 
   BaseRegionStackName:
     Description: Enter either the Base Region entrypoint or workload Stack Name
     Type: String
-  
+
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
   1vMXCondition: !Or
@@ -228,6 +197,7 @@ Conditions:
   2vMXCondition: !Equals
     - !Ref 'NumberOfvMXs'
     - '2'
+
 Resources:
   VMX1Stack:
     Condition: 1vMXCondition 
@@ -287,8 +257,6 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          AmazonSideASN:
-            Ref: AmazonSideASN
           QSS3BucketName:
             Ref: QSS3BucketName
           QSS3KeyPrefix:
@@ -307,21 +275,18 @@ Resources:
             Ref: vMX2MerakiNetworkTag
           LambdaRate:
             Ref: LambdaRate
-          # RegionsList: 
-          #   Ref: RegionsList
           MerakiEventBusArn: 
             Fn::ImportValue: 
               !Sub "${BaseRegionStackName}-MerakiEventBusArn"
           # Change this to ImportValue from base region stack
-          CreateStateMachineArn: 
-            Fn::ImportValue:
-              !Sub "${BaseRegionStackName}-CreateNetworkStateMachineAdditionalRegion"
-          BaseRegion: 
+          BaseRegionName: 
             Fn::ImportValue:
               !Sub "${BaseRegionStackName}-BaseRegion"
           MerakiEventBusName:
             Fn::ImportValue:
               !Sub "${BaseRegionStackName}-MerakiEventBusName"
+          BaseRegion: "No"
+
           
 Outputs:
   VPCID:

@@ -67,14 +67,12 @@ def generate_network_policy(event):
 
         #add the policy changes
         if 'asn-range' in event.keys():
-            # always override
-            policy['core-network-configuration']['asn-ranges'] = event['asn-range']
+            if event['asn-range']: 
+                policy['core-network-configuration']['asn-ranges'] = event['asn-range']
 
-        if 'regions' in event.keys():
-            #always override
-            region_list = []
-            for region in event['regions']:
-                region_list.append({'location': region}) 
+        if 'region' in event.keys():
+            region_list = policy['core-network-configuration']['edge-locations']
+            region_list.append({'location': region}) 
             policy['core-network-configuration']['edge-locations'] = region_list
 
         # Q: How does one get region awareness for new branches discovered

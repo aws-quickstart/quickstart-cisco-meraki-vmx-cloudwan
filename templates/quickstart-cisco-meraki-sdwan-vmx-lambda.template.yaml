@@ -11,9 +11,6 @@ Parameters:
   AvailabilityZone2SubnetID:
     Description: Subnet ID to be used for the deployment of vMX-2 in Availability Zone 2
     Type: 'AWS::EC2::Subnet::Id'
-  AmazonSideASN:
-    Description: ASN to be used for the Amazon TGW
-    Type: String
   QSS3BucketName:
     AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
     ConstraintDescription: "Quick Start bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-)."
@@ -58,31 +55,28 @@ Parameters:
       - rate(10 minutes)
       - rate(60 minutes)
     Type: String
-  # RegionsList: 
-  #   Type: String
-  #   Default: "us-east-1"
-  #   AllowedValues:
-  #     - us-east-1
-  #     - us-west-1
-  #   Description: "list of regions"
   GlobalNetworkName:
     Description: AWS CloudWAN Global Network Name
     Default: "meraki_gn"
     Type: String
   AmazonASNRange:
     Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Default: "65000-65500"
     Type: String
   MerakiEventBusName:
     Description: Name of CustomEventBus for EventBridge
     Default: "MerakiEventBus"
     Type: String
-  CreateStateMachineARN:
-      Description: ARN for create state machine step function
-      Type: String
+  BaseRegion:
+    Description: Is the stack being deployed for base region or additional regions
+    Type: String
+  BaseRegionName:
+    Type: String
+    Description: Base region for the CloudWAN resource
+    
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  AmazonASNRange: !Equals [!Ref AmazonASNRange, '']
 
 Resources:
   MerakiApiKey:
@@ -186,9 +180,9 @@ Resources:
       asn_range: !Ref 'AmazonASNRange'
       global_network_name: !Ref 'GlobalNetworkName'
       # we'll need to change the way regions list is passed for latest multi-regio design
-      regions_list: !Ref 'RegionsList'
       event_bus_name: !Ref 'MerakiEventBusName'
-      create_state_machine: !Ref 'CreateStateMachineARN'
+      base_region: !Ref 'BaseRegion'
+      base_region_name: !Ref 'BaseRegionName'
     Type: AWS::CloudFormation::CustomResource
 
   CreateLambdaFunction:
@@ -233,9 +227,9 @@ Resources:
           asn_range: !Ref 'AmazonASNRange'
           global_network_name: !Ref 'GlobalNetworkName'
            # we'll need to change the way regions list is passed for latest multi-regio design
-          regions_list: !Ref 'RegionsList'
           event_bus_name: !Ref 'MerakiEventBusName'
           update_state_machine: !Ref 'UpdateStateMachineARN'
+          base_region_name: !Ref 'BaseRegionName'
   
   PollingLambdaSchedulePermission:
     Type: "AWS::Lambda::Permission"
