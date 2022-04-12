@@ -103,6 +103,7 @@ Resources:
             - !Ref 'AWS::Region'
             - !Ref QSS3BucketRegion
           S3Bucket: !If 
+  
             - UsingDefaultBucket
             - !Sub '${QSS3BucketName}-${AWS::Region}'
             - !Ref QSS3BucketName
@@ -157,46 +158,6 @@ Resources:
                   - "events:*"
                 Resource: !Sub arn:${AWS::Partition}:events:*:*:*
 
-  CreateLambdaObject:
-    Properties:
-      ServiceToken:
-        Fn::GetAtt:
-        - CreateLambdaFunction
-        - Arn
-      meraki_org_id: !Ref 'MerakiOrgID'
-      rt_id: !Ref 'SDWANVPCRTID'
-      vmx1_tag: !Ref 'vMX1MerakiNetworkTag'
-      vmx2_tag: !Ref 'vMX2MerakiNetworkTag'
-      vpc_id: !Ref 'VPCID'
-      vpc_arn: !Sub 
-                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VPC_ID}
-                - VPC_ID: !Ref 'VPCID'
-      az1_subnet_arn: !Sub
-                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ1SubnetID}
-                - AZ1SubnetID: !Ref 'AvailabilityZone1SubnetID'
-      az2_subnet_arn: !Sub
-                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ2SubnetID}
-                - AZ2SubnetID: !Ref 'AvailabilityZone2SubnetID'
-      asn_range: !Ref 'AmazonASNRange'
-      global_network_name: !Ref 'GlobalNetworkName'
-      # we'll need to change the way regions list is passed for latest multi-regio design
-      event_bus_name: !Ref 'MerakiEventBusName'
-      base_region: !Ref 'BaseRegion'
-      base_region_name: !Ref 'BaseRegionName'
-    Type: AWS::CloudFormation::CustomResource
-
-  CreateLambdaFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: lambda_function.main
-      Timeout: 60
-      Role: !GetAtt 'LambdaBasicExecutionRole.Arn'
-      Runtime: python3.7
-      Code:
-        S3Bucket: !GetAtt 'CopyLambdaStack.Outputs.LambdaZipsBucket'
-        S3Key: !Sub "${QSS3KeyPrefix}functions/packages/meraki_create_lambda.zip"
-      MemorySize: 3008
-  
   PollingLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:

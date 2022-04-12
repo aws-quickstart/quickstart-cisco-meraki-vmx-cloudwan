@@ -241,40 +241,31 @@ Resources:
         vMXMerakiNetworkTag:
           Ref: vMX2MerakiNetworkTag
 
-  MerakiLambdaStack:
-    # DependsOn: StepFunctionStack 
+  StepFunctionStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL:
         !Sub
-          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-lambda.template.yaml
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cwstepfunction.template.yaml
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-          AvailabilityZone1SubnetID:
-            Ref: AZ1PublicSubnetID
-          AvailabilityZone2SubnetID:
-            Ref: AZ2PublicSubnetID
-          VPCID:
-            Ref: VPCID
           QSS3BucketName:
             Ref: QSS3BucketName
           QSS3KeyPrefix:
             Ref: QSS3KeyPrefix
           QSS3BucketRegion:
             Ref: QSS3BucketRegion
-          SDWANVPCRTID:
-            Ref: VPCRouteTableID
-          MerakiAPIKey:
-            Ref: MerakiAPIKey
-          MerakiOrgID:
-            Ref: MerakiOrgID
-          vMX1MerakiNetworkTag:
-            Ref: vMX1MerakiNetworkTag
-          vMX2MerakiNetworkTag:
-            Ref: vMX2MerakiNetworkTag
-          LambdaRate:
-            Ref: LambdaRate
+          GlobalNetworkName:
+            Ref: GlobalNetworkName
+          AvailabilityZone1SubnetID:
+            Ref: AZ1PublicSubnetID
+          AvailabilityZone2SubnetID:
+            Ref: AZ2PublicSubnetID
+          VPCID:
+            Ref: VPCID
+          AmazonASNRange:
+            Ref: AmazonASNRange
           MerakiEventBusArn: 
             Fn::ImportValue: 
               !Sub "${BaseRegionStackName}-MerakiEventBusArn"
@@ -286,6 +277,7 @@ Resources:
             Fn::ImportValue:
               !Sub "${BaseRegionStackName}-MerakiEventBusName"
           BaseRegion: "No"
+          
 
           
 Outputs:

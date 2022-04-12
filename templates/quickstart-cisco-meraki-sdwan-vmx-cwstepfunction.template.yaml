@@ -56,8 +56,6 @@ Globals:
     Handler: app.lambda_handler
     Runtime: python3.8
     Timeout: 900
-Metadata:
-  AWS::CloudFormation::Interface:
 Parameters:
   QSS3BucketName:
     AllowedPattern: "^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$"
@@ -83,9 +81,29 @@ Parameters:
     Description: Name of CustomEventBus for EventBridge
     Default: "MerakiEventBus"
     Type: String
+  BaseRegion:
+    Description: Is the stack being deployed for base region or additional regions
+    Type: String
+  BaseRegionName:
+    Type: String
+    Description: Base region for the CloudWAN resource
+  VPCID:
+    Description: 'ID of the VPC (e.g., vpc-0343606e)'
+    Type: 'AWS::EC2::VPC::Id'
+  AvailabilityZone1SubnetID:
+    Description: Subnet ID to be used for the deployment of vMX-1 in Availability Zone 1
+    Type: 'AWS::EC2::Subnet::Id'
+  AvailabilityZone2SubnetID:
+    Description: Subnet ID to be used for the deployment of vMX-2 in Availability Zone 2
+    Type: 'AWS::EC2::Subnet::Id'
+  AmazonASNRange:
+    Description: Autonomous System Number (ASN) for CloudWAN Network. 
+    Type: String
+  
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+  AmazonASNRange: !Equals [!Ref AmazonASNRange, '']
 
 Resources:
   MerakiEventBus:
@@ -600,8 +618,22 @@ Resources:
     Properties:
       ServiceToken: !GetAtt DSMCustomResourceLambda.Arn
       WaitHandle: !Ref DSMWaitHandle
+      EventBusName: !Ref 'MerakiEventBusName'
+      BaseRegion: !Ref 'BaseRegion'
+      BaseRegionName: !Ref 'BaseRegionName'
+      Az1SubnetArn: !Sub
+                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ1SubnetID}
+                - AZ1SubnetID: !Ref 'AvailabilityZone1SubnetID'
+      Az2SubnetArn: !Sub
+                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ2SubnetID}
+                - AZ2SubnetID: !Ref 'AvailabilityZone2SubnetID'
+      VPCId: !Ref 'VPCID'
+      VPCArn: !Sub 
+                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VPC_ID}
+                - VPC_ID: !Ref 'VPCID'
+      GlobalNetworkName: !Ref 'GlobalNetworkName'
+      ASN_Range: !Ref 'AmazonASNRange'
       #add !Ref globalnetworkname
-
 
   DSMCustomResourceLambda:
     Type: AWS::Lambda::Function
@@ -616,8 +648,19 @@ Resources:
           import boto3
           import json
           import cfnresponse
+          import os
           from botocore.vendored import requests
+
           sfn = boto3.client('stepfunctions')
+          region = os.environ['AWS_REGION']
+          aws_client = boto3.client('events', region_name=base_region_name)
+          EventBusName = event['ResourceProperties']['EventBusName']
+          asn_range = event['ResourceProperties']['ASN_Range']
+          vpc_arn = event['ResourceProperties']['VPCArn']
+          az1_subnet_arns = event['ResourceProperties']['Az1SubnetArn']
+          az2_subnet_arns = event['ResourceProperties']['Az2SubnetArn']
+          subnet_arns = [az1_subnet_arn, az2_subnet_arn]
+
 
           def handler(event, context):
             print('Received event: %s' % json.dumps(event))
@@ -625,14 +668,52 @@ Resources:
             responseData = {}
             try:
               if event['RequestType'] == 'Create':
-                ##eventually, needs to call the create 'step_functions
-                ##for now,just pass in the waithandle token to say nothing needs to be waited on
-                print(event['ResourceProperties']['WaitHandle'])
-                requests_data=json.dumps(dict(Status='SUCCESS',Reason='wait timer not needed',UniqueId='12345',Data='Custom Resource Lambda')).encode('utf-8')
-                response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
-                print (response)       
-                print('Nothing to do') 
-              if event['RequestType'] == 'Delete':
+                if base_region == 'Yes':
+                  response = aws_client.put_events(
+                    Entries=[
+                    {
+                        'Source': 'com.aws.merakicloudwanquickstart',
+                        'DetailType': 'New Meraki global network requested',
+                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": ['blackhole'], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+                        'EventBusName': EventBusName
+                    }
+                    ]
+                  )
+                  responseData.append(response)
+                  response2 = aws_client.put_events(
+                    Entries=[
+                    {
+                        'Source': 'com.aws.merakicloudwanquickstart',
+                        'DetailType': 'New meraki additional region requested',
+                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+                        'EventBusName': EventBusName
+                    }
+                    ]
+                  )
+                  responseData.append(response2)
+                elif base_region == 'No':
+                  response = aws_client.put_events(
+                      Entries=[
+                      {
+                          'Source': 'com.aws.merakicloudwanquickstart',
+                          'DetailType': 'New meraki additional region requested',
+                          'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+                          'EventBusName': EventBusName
+                      }
+                      ]
+                  )
+                  responseData.append(response)
+                else:
+                  logger.error('Unsupported region type')
+
+                  ###eventually, needs to call the create 'step_functions
+                  ###for now,just pass in the waithandle token to say nothing needs to be waited on
+                  #print(event['ResourceProperties']['WaitHandle'])
+                  #requests_data=json.dumps(dict(Status='SUCCESS',Reason='wait timer not needed',UniqueId='12345',Data='Custom Resource Lambda')).encode('utf-8')
+                  #response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
+                  #print (response)       
+                  #print('Nothing to do') 
+              elif event['RequestType'] == 'Delete':
                 response = sfn.start_execution(
                   stateMachineArn='${CloudWanDeleteStepFunction}',
                   input=json.dumps(event)

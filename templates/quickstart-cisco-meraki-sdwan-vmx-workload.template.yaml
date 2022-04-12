@@ -280,6 +280,19 @@ Resources:
             Ref: GlobalNetworkName
           MerakiEventBusName:
             Ref: MerakiEventBusName
+          BaseRegion: "Yes"
+          BaseRegionName:
+            Ref: AWS::Region
+          AvailabilityZone1SubnetID:
+            Ref: AZ1PublicSubnetID
+          AvailabilityZone2SubnetID:
+            Ref: AZ2PublicSubnetID
+          VPCID:
+            Ref: VPCID
+          AmazonASNRange:
+            Ref: AmazonASNRange
+          
+          
 
   MerakiLambdaStack:
     DependsOn: StepFunctionStack 
