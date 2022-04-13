@@ -106,6 +106,39 @@ Conditions:
   AmazonASNRange: !Equals [!Ref AmazonASNRange, '']
 
 Resources:
+
+# Need to separate these resources into different stacks, here is an example on how to do it.
+# Basically, the event bridge bus, and the delete resources need to be in their own stack, with a retain 
+
+  # DeleteStack:
+  #   Type: AWS::CloudFormation::Stack
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     TemplateURL:
+  #       !Sub
+  #         - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/delete.template.yaml
+  #         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+  #           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+  #     Parameters:
+  #       MerakiEventBusName:
+  #         Ref: MerakiEventBusName      
+
+  # CustomResourceStack:
+  #   Type: AWS::CloudFormation::Stack
+  #   DependsOn: DeleteStack
+  #   Properties:
+  #     TemplateURL:
+  #       !Sub
+  #         - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/customresource.template.yaml
+  #         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+  #           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+  #     Parameters:
+  #       MerakiEventBusName:
+  #         Ref: MerakiEventBusName   
+
+
+
   MerakiEventBus:
     Type: AWS::Events::EventBus
     Properties:
@@ -354,7 +387,7 @@ Resources:
                 - !Ref AWS::AccountId
                 
   CreateNetworkStateMachineAdditionalRegion:
-    Type: AWS:Serverless::StateMachine
+    Type: AWS::Serverless::StateMachine
     Properties:
       Definition:
           Comment: State machine to update meraki global cloudwan network with additional region
@@ -714,11 +747,16 @@ Resources:
                   #print (response)       
                   #print('Nothing to do') 
               elif event['RequestType'] == 'Delete':
-                response = sfn.start_execution(
-                  stateMachineArn='${CloudWanDeleteStepFunction}',
-                  input=json.dumps(event)
-                )
-                responseData = {'executionArn': response['executionArn']}                    
+                response = ec2.put_events(
+                    Entries=[
+                    {
+                        'Source': 'com.aws.merakicloudwanquickstart',
+                        'DetailType': 'Delete Cloud WAN resources requested',
+                        'Detail': json.dumps({}),
+                        'EventBusName': 'TestEventBus'
+                    }
+                    ]
+                )                     
               else:
                 print('Nothing to do')                  
             except Exception as e:
@@ -751,8 +789,9 @@ Resources:
               Action: "*"
               Resource: "*"
 
+
   CloudWanDeleteStepFunction:
-    Type: AWS::StepFunctions::StateMachine
+    Type: AWS::Serverless::StateMachine
     DependsOn: 
     - CallbackLambda
     - DeleteAttachmentsDSMFunction
@@ -761,227 +800,176 @@ Resources:
     - DescribeNetworkDSMFunction
     - GetAttachmentStatusDSMFunction
     - GetCoreStatusDSMFunction
+    - MerakiEventBus
     Properties:
-      RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "Comment": "A description of my state machine",
-          "StartAt": "Describe Network",
-          "States": {
-            "Describe Network": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "Payload.$": "$",
-                "FunctionName": "${DescribeNetworkDSMFunction.Arn}"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 6,
-                  "BackoffRate": 2
-                }
-              ],
-              "Next": "Delete Attachments",
-              "ResultPath": "$.networkDetails"
-            },
-            "Delete Attachments": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "Payload.$": "$",
-                "FunctionName": "${DeleteAttachmentsDSMFunction.Arn}"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 6,
-                  "BackoffRate": 2
-                }
-              ],
-              "Next": "Wait 1 minute",
-              "ResultPath": "$.attachmentsDeleteExecuted"
-            },
-            "Wait 1 minute": {
-              "Type": "Wait",
-              "Seconds": 10,
-              "Next": "Get Attachment Status"
-            },
-            "Get Attachment Status": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "Payload.$": "$",
-                "FunctionName": "${GetAttachmentStatusDSMFunction.Arn}"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 6,
-                  "BackoffRate": 2
-                }
-              ],
-              "Next": "Attachments Deleted?",
-              "ResultPath": "$.attachmentStatus"
-            },
-            "Attachments Deleted?": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.attachmentStatus.Payload",
-                  "StringEquals": "DELETED",
-                  "Next": "Delete Core Network"
-                }
-              ],
-              "Default": "Wait 1 minute"
-            },
-            "Delete Core Network": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "Payload.$": "$",
-                "FunctionName": "${DeleteCoreDSMFunction.Arn}"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 6,
-                  "BackoffRate": 2
-                }
-              ],
-              "Next": "Wait 5 Minutes",
-              "ResultPath": "$.coreDeleteExecuted"
-            },
-            "Wait 5 Minutes": {
-              "Type": "Wait",
-              "Seconds": 10,
-              "Next": "Get Core Network Status"
-            },
-            "Get Core Network Status": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "Payload.$": "$",
-                "FunctionName": "${GetCoreStatusDSMFunction.Arn}"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 6,
-                  "BackoffRate": 2
-                }
-              ],
-              "Next": "Core Network Deleted?",
-              "ResultPath": "$.coreStatus"
-            },
-            "Core Network Deleted?": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.coreStatus.Payload",
-                  "StringEquals": "DELETED",
-                  "Next": "Delete Global Network"
-                }
-              ],
-              "Default": "Wait 5 Minutes"
-            },
-            "Delete Global Network": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "Payload.$": "$",
-                "FunctionName": "${DeleteGlobalDSMFunction.Arn}"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 6,
-                  "BackoffRate": 2
-                }
-              ],
-              "ResultPath": "$.globalDeleteExecuted",
-              "Next": "CallBack Lambda"
-            },
-            "CallBack Lambda": {
-              "Type": "Task",
-              "Resource": "arn:aws:states:::lambda:invoke",
-              "Parameters": {
-                "Payload.$": "$",
-                "FunctionName": "${CallbackLambda.Arn}"
-              },
-              "Retry": [
-                {
-                  "ErrorEquals": [
-                    "Lambda.ServiceException",
-                    "Lambda.AWSLambdaException",
-                    "Lambda.SdkClientException"
-                  ],
-                  "IntervalSeconds": 2,
-                  "MaxAttempts": 6,
-                  "BackoffRate": 2
-                }
-              ],
-              "End": true,
-              "ResultPath": "$.callback"
-            }
-          }
-        }
+      Definition:
+        Comment: A description of my state machine
+        StartAt: Describe Network
+        States:
+          Describe Network:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt DescribeNetworkDSMFunction.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
+            Next: Delete Attachments
+            ResultPath: "$.networkDetails"
+          Delete Attachments:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt DeleteAttachmentsDSMFunction.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
+            Next: Wait 1 minute
+            ResultPath: "$.attachmentsDeleteExecuted"
+          Wait 1 minute:
+            Type: Wait
+            Seconds: 10
+            Next: Get Attachment Status
+          Get Attachment Status:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt GetAttachmentStatusDSMFunction.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
+            Next: Attachments Deleted?
+            ResultPath: "$.attachmentStatus"
+          Attachments Deleted?:
+            Type: Choice
+            Choices:
+            - Variable: "$.attachmentStatus.Payload"
+              StringEquals: DELETED
+              Next: Delete Core Network
+            Default: Wait 1 minute
+          Delete Core Network:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt DeleteCoreDSMFunction.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
+            Next: Wait 5 Minutes
+            ResultPath: "$.coreDeleteExecuted"
+          Wait 5 Minutes:
+            Type: Wait
+            Seconds: 10
+            Next: Get Core Network Status
+          Get Core Network Status:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt GetCoreStatusDSMFunction.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
+            Next: Core Network Deleted?
+            ResultPath: "$.coreStatus"
+          Core Network Deleted?:
+            Type: Choice
+            Choices:
+            - Variable: "$.coreStatus.Payload"
+              StringEquals: DELETED
+              Next: Delete Global Network
+            Default: Wait 5 Minutes
+          Delete Global Network:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt DeleteGlobalDSMFunction.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
+            ResultPath: "$.globalDeleteExecuted"
+            Next: CallBack Lambda
+          CallBack Lambda:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt CallbackLambda.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
+            End: true
+            ResultPath: "$.callback"
+      Policies:
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DescribeNetworkDSMFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DeleteAttachmentsDSMFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetAttachmentStatusDSMFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DeleteCoreDSMFunction          
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetCoreStatusDSMFunction  
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DeleteGlobalDSMFunction 
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CallbackLambda 
+      Events:
+        UpdateNetworkRule:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref MerakiEventBus
+            InputPath: $.detail
+            Pattern:
+              source:
+                - com.aws.merakicloudwanquickstart
+              detail-type:
+                - Delete Cloud WAN resources requested
+              # account:
+              #   - !Ref AWS::AccountId        
 
 
-  StatesExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: 
-                - !Sub states.${AWS::Region}.amazonaws.com
-            Action:
-              - "sts:AssumeRole"
-  StatesExecutionPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: StatesExecutionPolicy
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: "lambda:InvokeFunction"
-            Resource: "*"
-      Roles:
-        - !Ref StatesExecutionRole
 
   CallbackLambda:
     Type: AWS::Lambda::Function
@@ -1028,11 +1016,37 @@ Resources:
   DeleteAttachmentsDSMFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/delete_attachments_delete_state_machine.zip"
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      InlineCode: |
+        import json
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        from botocore.vendored import requests
+
+        client = boto3.client('networkmanager')
+
+        def lambda_handler(event, context):
+            #print(event)
+            print(event['networkDetails']['Payload'])
+            attachments = event['networkDetails']['Payload']['Attachments']
+            #delete attachments
+            #if deleting state, pass , else fail
+            for attachment in attachments:
+                #print(attachment)
+                response = client.delete_attachment(AttachmentId=attachment)
+                print(response)
+                if response['Attachment']['State'] == 'DELETING':
+                    print('DELETING',attachment)
+                else:
+                    #to-do: error handling
+                    print('ERROR',attachment)
+                    return('ERROR')
+
+            return('DELETING')
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
@@ -1042,11 +1056,30 @@ Resources:
   DeleteCoreDSMFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/delete_core_delete_state_machine.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import json
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')        
+        import boto3
+        from botocore.vendored import requests
+
+        client = boto3.client('networkmanager')
+
+        def lambda_handler(event, context):
+            print(event['networkDetails']['Payload']['CoreNetworkId'])
+            coreNetworkId = event['networkDetails']['Payload']['CoreNetworkId']
+            response = client.delete_core_network(CoreNetworkId=coreNetworkId)
+            print(response)
+            if response['CoreNetwork']['State'] == 'DELETING':
+                print('DELETING')
+                return('DELETING')
+            else:
+                #to-dp: write error handling
+                print('ERROR')
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
@@ -1056,11 +1089,27 @@ Resources:
   DeleteGlobalDSMFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/delete_global_delete_state_machine.zip"
+      Handler: index.lambda_handler 
+      Runtime: python3.8   
+      InlineCode: |
+        import json
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')            
+        import boto3
+        from botocore.vendored import requests
+
+        client = boto3.client('networkmanager')
+
+        def lambda_handler(event, context):
+            globalNetworkId = event['networkDetails']['Payload']['GlobalNetworkId']
+            try:
+                response = client.delete_global_network(GlobalNetworkId=globalNetworkId)
+                print(response)
+            
+            except Exception as e:
+                print(e)
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
@@ -1070,11 +1119,69 @@ Resources:
   DescribeNetworkDSMFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/describe_network_delete_state_machine.zip"
+      Handler: index.lambda_handler  
+      Runtime: python3.8  
+      InlineCode: |
+        import json
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')          
+        from botocore.vendored import requests
+        import boto3
+
+        client = boto3.client('networkmanager')
+
+
+        def lambda_handler(event, context):
+            print('Event: {}'.format(event))
+            network={}
+            try:
+                #get GlobalNetworkID based upon predefined tag
+                response = client.describe_global_networks()
+                for gn in response['GlobalNetworks']:
+                    for tag in gn['Tags']:
+                        if tag['Key'] == 'quickstart-control-DO-NOT-MODIFY' and tag['Value'] == 'Meraki CloudWAN Quick Start':
+                            print('Global NetworkID: ' + gn['GlobalNetworkId'])
+                            print('tag: '+ tag['Key'], tag['Value'])
+                            network['GlobalNetworkId'] = gn['GlobalNetworkId']
+                
+                
+                #get the proper core network associated with the GlobalNetworkID
+                response = client.list_core_networks()
+                for core in response['CoreNetworks']:
+                    #is try/except the proper way to do this?
+                    #not all items returned will have a global network, so it will throw an error without try/except
+                    try: 
+                        if core['GlobalNetworkId'] == network['GlobalNetworkId']:
+                            #print(core['CoreNetworkId'])
+                            network['CoreNetworkId'] = core['CoreNetworkId']
+                    except:
+                        #print('global network not found')
+                        pass
+                
+                network['Attachments'] = [] #create list to include multiple attachments
+                response = client.list_attachments(CoreNetworkId=network['CoreNetworkId'])
+                for attachment in response['Attachments']:
+                    #print(attachment)
+                    try: 
+                        if attachment['SegmentName'] == 'sdwan':
+                            #print(attachment['AttachmentId'])
+                            network['Attachments'].append(attachment['AttachmentId'])
+                    except:
+                        #print('SegmentName not found')
+                        pass                
+                
+                
+                #add error logic if network not found
+                print(network)
+                return(network)
+                
+            except Exception as e:
+                print(e)
+                #requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='DeleteStateMachine',Data=event['ResourceProperties'])).encode('utf-8')
+                #response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+                #print (response)    
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
@@ -1083,11 +1190,36 @@ Resources:
   GetAttachmentStatusDSMFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_attachments_status_delete_state_machine.zip"
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      InlineCode: |
+        import json
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')          
+        from botocore.vendored import requests
+        import boto3
+
+        client = boto3.client('networkmanager')
+
+        def lambda_handler(event, context):
+            print(event)
+            print(event['networkDetails']['Payload']['CoreNetworkId'])
+            coreNetworkId = event['networkDetails']['Payload']['CoreNetworkId']
+            response = client.list_attachments(CoreNetworkId=coreNetworkId)
+            print(response)
+            for attachment in response['Attachments']:
+                print(attachment)
+
+            if response['Attachments']:
+                print('WAITING')
+                return('WAITING')
+            else:
+                print('DELETED')
+                return('DELETED')
+
+
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
@@ -1096,15 +1228,34 @@ Resources:
   GetCoreStatusDSMFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_core_status_delete_state_machine.zip"
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      InlineCode: |
+        import json
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')         
+        import boto3
+        from botocore.vendored import requests
+
+        client = boto3.client('networkmanager')
+
+        def lambda_handler(event, context):
+            coreNetworkId = event['networkDetails']['Payload']['CoreNetworkId']
+            response = client.list_core_networks()
+            for core in response['CoreNetworks']:
+                if core['CoreNetworkId'] == coreNetworkId:
+                    print('WAITING')
+                    return('WAITING')
+            print('DELETED')
+            return('DELETED')
+
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
       - AmazonEC2ReadOnlyAccess
+
 
 ##End of Delete State Machine Resources
 ##
