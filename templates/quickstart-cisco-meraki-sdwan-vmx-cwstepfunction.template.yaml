@@ -147,66 +147,411 @@ Resources:
   CreateGlobalNetworkFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/create_global_network.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+        import uuid
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try: 
+                logger.info('Creatng a global network for Meraki cloudwan')
+                id = uuid.uuid1()
+                network_name = event['network_name'] + "-" + str(id)[:8]
+                #network_name = default_network_name + "-" + str(id)[:8]
+                global_network = client.create_global_network(
+                    Description='meraki global network',
+                    Tags=[
+                        {
+                            'Key': 'Name',
+                            'Value': network_name 
+                        }
+                    ]
+                )
+                global_network_id = global_network['GlobalNetwork']['GlobalNetworkId']
+
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+            return global_network_id
+        
       Policies:
       - AWSNetworkManagerFullAccess
   
   DescribeGlobalNetworksFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/describe_global_network.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try: 
+              logger.info('Describing global network for Meraki cloudwan')
+              response = client.describe_global_networks(
+                  GlobalNetworkIds=[event['GlobalNetworkId']]
+              )
+
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            return response['GlobalNetworks'][0]['State']
       Policies:
       - AWSNetworkManagerFullAccess
   
   CreateCoreNetworkFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/create_core_network.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')        
+        import boto3
+        import botocore
+        import logging
+        import uuid
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try: 
+                logger.info('Creatng a core network for Meraki cloudwan')
+                id = uuid.uuid1()
+                network_name = event['GlobalNetworkId'] + "-" + 'core-network'
+                core_network = client.create_core_network(
+                    GlobalNetworkId = event['GlobalNetworkId'],
+                    Description='meraki core network',
+                    Tags=[
+                        {
+                            'Key': 'Name',
+                            'Value': network_name 
+                        },
+                    ]
+                )
+                core_network_id = core_network['CoreNetwork']['CoreNetworkId']
+            
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+            
+            return core_network_id
       Policies:
       - AWSNetworkManagerFullAccess
   
   DescribeCoreNetworksFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/describe_core_network.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            print('Event: {}'.format(event))
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+
+            try:
+              logger.info('Describing global network for Meraki cloudwan')
+              response = client.get_core_network(
+                  CoreNetworkId=event['CoreNetworkId']
+              )
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            return response['CoreNetwork']['State']
       Policies:
       - AWSNetworkManagerFullAccess
   
   UpdateNetworkPolicyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/update_network_policy.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+        import json
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def generate_network_policy(event): 
+            #fetch latest existing network policy document
+            response = client.list_core_network_policy_versions(CoreNetworkId = event['CoreNetworkId'])
+            if response['CoreNetworkPolicyVersions'] != []:
+                policy_response = client.get_core_network_policy(CoreNetworkId = event['CoreNetworkId'], Alias = 'LATEST')
+                policy = json.loads(policy_response['CoreNetworkPolicy']['PolicyDocument'])
+            #create a new default policy skeleton
+            else:
+                policy = {}
+                policy['version'] = "2021.12"
+                policy['core-network-configuration'] = {
+                    'asn-ranges': []
+                }
+                policy['core-network-configuration'] = {
+                    'edge-locations': []
+                }
+                policy['segments'] = [
+                    {
+                        'name': 'sdwan',
+                        'require-attachment-acceptance': False
+                    }
+                ]
+                policy['segment-actions'] = [
+                    {
+                        'action': "create-route",
+                        'segment': 'sdwan',
+                        'destination-cidr-blocks': [],
+                        'destinations': ['blackhole'],
+                        'description': 'create route for branch traffic to go out via SD-WAN VPC Attachment'
+                    },
+                    {
+                        'action': 'share',
+                        'mode': 'attachment-route',
+                        'segment': 'sdwan',
+                        'share-with': '*'
+                    }
+                ]
+                policy['attachment-policies'] = [
+                    {
+                        'rule-number': 100,
+                        'conditions': [
+                            {
+                                'type': 'tag-value',
+                                'key': 'name',
+                                'operator': 'contains',
+                                'value': 'Meraki-SDWAN-VPC'
+                            }
+                        ],
+                        'action': {
+                            'association-method': 'constant',
+                            'segment': 'sdwan'
+                        }
+                    }
+                ]
+
+            #add the policy changes
+            if 'asn-range' in event.keys():
+                if event['asn-range']: 
+                    policy['core-network-configuration']['asn-ranges'] = event['asn-range']
+
+            if 'region' in event.keys():
+                region_list = policy['core-network-configuration']['edge-locations']
+                region_list.append({'location': region}) 
+                policy['core-network-configuration']['edge-locations'] = region_list
+
+            # Q: How does one get region awareness for new branches discovered
+            # as an enhancement, may want to implement the case to create a new route when one doesn't exist on an existing policy
+            if 'destination_cidr_blocks' in event.keys():
+                # append to destination-cidr-blocks in create-route action only for 'sdwan' segment
+                for action in policy['segment-actions']:
+                    # does create-route action exist?
+                    if action['action'] == 'create-route':
+                        # append cidr if 'sdwan segment exists
+                        if action['segment'] == 'sdwan':
+                            for cidr in event['destination_cidr_blocks']:
+                                action['destination-cidr-blocks'].append(cidr)
+
+            if 'Destinations' in event.keys():
+                # if create-route segment-action exists, append destination if no 'blackhole' exists otherwise replace 'blackhole'
+                for action in policy['segment-actions']:
+                    if action['action'] == 'create-route':
+                        # append destinaciont only to 'sdwan' segment exists
+                        if action['segment'] == 'sdwan':
+                            if action['destinations'] == ['blackhole']:
+                                action['destinations'] = [event['Destinations']]
+                            else:
+                                for destination in event['Destinations']:
+                                    action['destinations'].append(destination)
+
+            # as an enhancement, may want to implement the case to create a new attachment policy when one doesn't exist on an existing policy
+        
+            return policy
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try: 
+                logger.info('Attaching network policy document to Meraki cloudwan core network')
+                network_policy = generate_network_policy(event)
+                print(network_policy)
+                print(json.dumps(network_policy))
+                response = client.put_core_network_policy(
+                    CoreNetworkId=event['CoreNetworkId'],
+                    PolicyDocument= json.dumps(network_policy)
+                )
+
+                network_policy_version_id = response['CoreNetworkPolicy']['PolicyVersionId']
+
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            return network_policy_version_id
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
   ExecuteCoreNetworkChangeSetFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/execute_core_network_change_set.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')   
+        import boto3
+        import botocore
+        import logging
+        import uuid
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try: 
+                logger.info('executing network policy version ' + str(event['NetworkPolicyVersionId']))
+                response = client.execute_core_network_change_set(
+                    CoreNetworkId = event['CoreNetworkId'],
+                    PolicyVersionId = event['NetworkPolicyVersionId']
+                )
+
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            return response
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
@@ -214,11 +559,49 @@ Resources:
   GetNetworkPolicyFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_network_policy_status.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try:
+              logger.info('Describing global network network policy for Meraki cloudwan')
+              response = client.get_core_network_policy(
+                  CoreNetworkId=event['CoreNetworkId'],
+                  PolicyVersionId=event['NetworkPolicyVersionId']
+              )
+
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            return response['CoreNetworkPolicy']['ChangeSetState']
       Policies:
       - AWSNetworkManagerFullAccess
       - AWSAccountManagementReadOnlyAccess
@@ -226,11 +609,57 @@ Resources:
   CreateVpcAttachmentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/create_vpc_attachment.zip"
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/') 
+        import boto3
+        import botocore
+        import logging
+        import uuid
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try: 
+                logger.info('Creating sdwan vpc attachment')
+                response = client.create_vpc_attachment(
+                    CoreNetworkId=event['CoreNetworkId'],
+                    VpcArn=event['VpcArn'],
+                    SubnetArns=event['SubnetArns'],
+                    Tags=[
+                        {
+                            'Key': 'name',
+                            'Value': 'Meraki-SDWAN-VPC'
+                        },
+                    ],
+                )
+                VpcAttachmentId = response['VpcAttachment']['Attachment']['AttachmentId']
+
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+            return VpcAttachmentId
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
@@ -239,16 +668,62 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri:
-        Bucket: !Sub
-                - "${S3Bucket}"
-                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-        Key: !Sub "${QSS3KeyPrefix}functions/packages/get_vpc_attachment.zip"
+         Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            print('Received event: %s' % json.dumps(event))
+
+            try:
+              logger.info('Describing global network network policy for Meraki cloudwan')
+              response = client.get_vpc_attachment(
+                  AttachmentId=event['Destinations'],
+              )
+            except botocore.exceptions.ClientError as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            return response['VpcAttachment']['Attachment']['State']
       Policies:
       - AWSNetworkManagerFullAccess
       - AWSAccountManagementReadOnlyAccess
 
   CreateStateMachine:
     Type: AWS::Serverless::StateMachine
+    DependsOn: 
+    - CallbackLambda
+    - CreateGlobalNetworkFunction
+    - DescribeGlobalNetworksFunction
+    - CreateCoreNetworkFunction
+    - DescribeCoreNetworksFunction
+    - UpdateNetworkPolicyFunction
+    - ExecuteCoreNetworkChangeSetFunction
+    - GetNetworkPolicyFunction
     Properties:
       Definition:
         Comment: State machine to create meraki cloudwan global network
@@ -267,8 +742,8 @@ Resources:
             Type: Task
             Resource: !GetAtt DescribeGlobalNetworksFunction.Arn
             ResultPath: $.GlobalNetworkStatus
-            Next: Global network completed?
-          Global network completed?:
+            Next: Global network created?
+          Global network created?:
             Type: Choice
             Choices:
             - Variable: "$.GlobalNetworkStatus"
@@ -291,18 +766,18 @@ Resources:
             Type: Task
             Resource: !GetAtt DescribeCoreNetworksFunction.Arn
             ResultPath: $.CoreNetworkStatus
-            Next: Core network completed?
-          Core network completed?:
+            Next: Core network created?
+          Core network created?:
             Type: Choice
             Choices:
             - Variable: "$.CoreNetworkStatus"
               StringEquals: AVAILABLE
-              Next: Update network policy
+              Next: Define network policy
             - Variable: "$.CoreNetworkStatus"
               StringEquals: FAILED
               Next: Failed
             Default: Wait 10 seconds for core network
-          Update network policy:
+          Define network policy:
             Type: Task
             Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
             ResultPath: $.NetworkPolicyVersionId
@@ -321,16 +796,16 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: READY_TO_EXECUTE
-              Next: Execute core network change set
+              Next: Execute network policy changeset
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: FAILED_GENERATION
               Next: Failed
             Default: Wait 10 seconds for network policy
-          Execute core network change set:
+          Execute network policy changeset:
             Type: Task
             Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
             ResultPath: $.ChangeSetResponse
-            Next: Wait 60 seconds for execute core network changeset
+            Next: Wait 60 seconds for execute network policy changeset
           Wait 60 seconds for execute core network changeset:
             Type: Wait
             Seconds: 60
@@ -345,17 +820,27 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: EXECUTION_SUCCEEDED
-              Next: Create Vpc Attachment
+              Next: Callback Lambda
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: FAILED_GENERATION
               Next: Failed
             Default: Wait 60 seconds for execute core network changeset
-          Done:
-            Type: Pass
+          CallBack Lambda:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt CallbackLambda.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
             End: true
-          Failed:
-            Type: Pass
-            End: true
+            ResultPath: "$.callback"
       Policies:
       - LambdaInvokePolicy:
           FunctionName: !Ref CreateGlobalNetworkFunction
@@ -633,24 +1118,26 @@ Resources:
 ##
 ## Delete State Machine Resources
   
-  DSMWaitCondition:
+  StateMachineWaitCondition:
     Type: AWS::CloudFormation::WaitCondition
     # DependsOn: 
     Properties:
-      Handle: !Ref DSMWaitHandle
-      Timeout: 300
+      Handle: !Ref StateMachineWaitHandle
+      Timeout: 7200
       Count: 1
   
-  DSMWaitHandle:
+  StateMachineWaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
 
-  DSMCustomResource:
+  StateMachineCustomResource:
     Type: Custom::CloudWanLambda
     DependsOn: 
       - CloudWanDeleteStepFunction
+      - MerakiEventBus
+      - CreateStateMachine
     Properties:
-      ServiceToken: !GetAtt DSMCustomResourceLambda.Arn
-      WaitHandle: !Ref DSMWaitHandle
+      ServiceToken: !GetAtt StateMachineCustomResourceLambda.Arn
+      WaitHandle: !Ref StateMachineWaitHandle
       EventBusName: !Ref 'MerakiEventBusName'
       BaseRegion: !Ref 'BaseRegion'
       BaseRegionName: !Ref 'BaseRegionName'
@@ -668,13 +1155,13 @@ Resources:
       ASN_Range: !Ref 'AmazonASNRange'
       #add !Ref globalnetworkname
 
-  DSMCustomResourceLambda:
+  StateMachineCustomResourceLambda:
     Type: AWS::Lambda::Function
     Properties:
-      Description: Lambda for DSMCustomResource
+      Description: Lambda for StateMachineCustomResource
       Handler: index.handler
       Runtime: python3.6
-      Role: !GetAtt DSMCustomResourceLambdaRole.Arn
+      Role: !GetAtt StateMachineCustomResourceLambdaRole.Arn
       Timeout: 300
       Code:
         ZipFile: !Sub | 
@@ -765,7 +1252,7 @@ Resources:
             finally:
               cfnresponse.send(event, context, status, responseData)
   
-  DSMCustomResourceLambdaRole:
+  StateMachineCustomResourceLambdaRole:
       Type: AWS::IAM::Role
       Properties:
         AssumeRolePolicyDocument:
