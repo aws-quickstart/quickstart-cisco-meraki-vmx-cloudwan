@@ -57,7 +57,7 @@ Parameters:
     Type: String
   GlobalNetworkName:
     Description: AWS CloudWAN Global Network Name
-    Default: "meraki_gn"
+    Default: "meraki-gn"
     Type: String
   AmazonASNRange:
     Description: Autonomous System Number (ASN) for CloudWAN Network. 
@@ -65,9 +65,6 @@ Parameters:
   MerakiEventBusName:
     Description: Name of CustomEventBus for EventBridge
     Default: "MerakiEventBus"
-    Type: String
-  BaseRegion:
-    Description: Is the stack being deployed for base region or additional regions
     Type: String
   BaseRegionName:
     Type: String

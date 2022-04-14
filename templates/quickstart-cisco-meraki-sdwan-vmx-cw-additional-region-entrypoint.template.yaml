@@ -26,7 +26,8 @@ Metadata:
           - VPCCIDR
           - AvailabilityZone1CIDR
           - AvailabilityZone2CIDR
-          - BaseRegionStackName
+          - MerakiEventBusName
+          - GlobalNetworkName
       - Label:
           default: EC2 configuration
         Parameters:
@@ -77,8 +78,12 @@ Metadata:
         default: Quick Start S3 key prefix
       LambdaRate:
         default: CloudWatch Events rule rate
-      BaseRegionStackName:
-        default: "Base Region Stack Name"
+      MerakiEventBusName:
+        default: "Meraki CloudWAN EventBus Name"
+      GlobalNetworkName:
+        default: "Meraki CloudWAN Global network name"
+      AmazonASNRange:
+        default: CloudWAN ASN Range
 Parameters:
   MerakiOrgID:
     Description: Meraki organization ID.
@@ -191,8 +196,16 @@ Parameters:
     Description: On the Meraki dashboard, the vMX network tag for the second vMX instance.
     Type: String
     Default: vMX2
-  BaseRegionStackName:
-    Description: Enter either the Base Region entrypoint or workload Stack Name
+  MerakiEventBusName:
+    Description: The Meraki Event Bus Name
+    Type: String
+    Value: !Ref MerakiEventBusName
+  GlobalNetworkName:
+    Description: The Meraki Event Bus Name
+    Type: String
+    Value: !Ref GlobalNetworkName
+  AmazonASNRange:
+    Description: Autonomous System Number (ASN) for CloudWAN Network. 
     Type: String
 
 Conditions:
@@ -224,7 +237,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-workload-additional-region.template.yaml
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cw-additional-region-workload.template.yaml
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:

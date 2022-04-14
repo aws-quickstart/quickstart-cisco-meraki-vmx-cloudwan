@@ -197,7 +197,7 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
         }
         ]
     )
-    return responseData
+    return response
 
 def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, event_bus_name, base_region_name):
     org_id = org_id

@@ -3,54 +3,6 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   This stack is creating creates a step function workflow for meraki cloudWAN.(qs-1srtkbc3l)
 
-# Metadata:
-#   AWS::ServerlessRepo::Application:
-#      Name: Amazon-Meraki-cloudWAN integration
-#      Description: This integration demonstrates an sets up multiple workflows using AWS Step Functions, AWS Lambda, Amazon Eventbridge and Meraki Console Amazon EventBridge Integration.
-#      Author: AWS Quick Start
-#      LicenseUrl: LICENSE
-#      ReadmeUrl: README.md
-#      Labels: ['amazon', 'eventbridge', 'integration', 'solution', 'aws', 'lambda', 'step_functions', 'meraki', 'networkmanager']
-#      HomePageUrl: https://aws.amazon.com/quickstart/quickstart-cisco-meraki-sdwan-vmx
-#      SemanticVersion: 0.1.3
-#      SourceCodeUrl: https://github.com/aws-quickstart/quickstart-cisco-meraki-sdwan-vmx
-  # AWS::CloudFormation::Interface:
-  #   ParameterGroups:
-  #   - Label:
-  #       default: Amazon EventBridge Integration Solution
-  #     Parameters:
-  #     - EventSourceName
-  #   - Label:
-  #       default: Meraki Configuration
-  #     Parameters:
-  #     - MerakiToken
-  #   ParameterLabels:
-  #     EventSourceName:
-  #       default: Event Source Name
-  #     MerakiAccessToken:
-  #       default: Access Token
-
-# Parameters:
-#   GlobalNetworkName:
-#     Description: Name of Global Network
-#     Type: String
-
-#Type: 'AWS::Serverless::Function'
-#    Properties:
-#      FunctionName: !Sub "${AWS::StackName}-MacroNFWHelperFunction"
-#      Handler: firewallmacro.handle
-#      Runtime: python3.7
-#      CodeUri:
-#        Bucket: !Sub
-#                - "${S3Bucket}"
-#                - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-#        Key: !Sub "${QSS3KeyPrefix}apps/sumo-aws-apps/sumologic-app-utils/sumo_app_utils.zip"
-#      MemorySize: 128
-#      Timeout: 900
-#      Role:
-#        Fn::GetAtt:
-#          - MacroNFWHelperRole
-#          - Arn 
 Globals:
   Function:
     Handler: app.lambda_handler
@@ -75,18 +27,12 @@ Parameters:
     Type: String
   GlobalNetworkName:
     Description: AWS CloudWAN Global Network Name
-    Default: "meraki_gn"
+    Default: "meraki-gn"
     Type: String
   MerakiEventBusName:
     Description: Name of CustomEventBus for EventBridge
     Default: "MerakiEventBus"
     Type: String
-  BaseRegion:
-    Description: Is the stack being deployed for base region or additional regions
-    Type: String
-  BaseRegionName:
-    Type: String
-    Description: Base region for the CloudWAN resource
   VPCID:
     Description: 'ID of the VPC (e.g., vpc-0343606e)'
     Type: 'AWS::EC2::VPC::Id'
@@ -106,44 +52,15 @@ Conditions:
   AmazonASNRange: !Equals [!Ref AmazonASNRange, '']
 
 Resources:
-
-# Need to separate these resources into different stacks, here is an example on how to do it.
-# Basically, the event bridge bus, and the delete resources need to be in their own stack, with a retain 
-
-  # DeleteStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   DeletionPolicy: Retain
-  #   UpdateReplacePolicy: Retain
-  #   Properties:
-  #     TemplateURL:
-  #       !Sub
-  #         - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/delete.template.yaml
-  #         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
-  #           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-  #     Parameters:
-  #       MerakiEventBusName:
-  #         Ref: MerakiEventBusName      
-
-  # CustomResourceStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   DependsOn: DeleteStack
-  #   Properties:
-  #     TemplateURL:
-  #       !Sub
-  #         - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/customresource.template.yaml
-  #         - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
-  #           S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
-  #     Parameters:
-  #       MerakiEventBusName:
-  #         Ref: MerakiEventBusName   
-
-
-
+##
+## Event Bus
   MerakiEventBus:
     Type: AWS::Events::EventBus
     Properties:
       Name: !Ref MerakiEventBusName
 
+##
+## Functions  
   CreateGlobalNetworkFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -158,6 +75,9 @@ Resources:
         import botocore
         import logging
         import uuid
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -216,6 +136,9 @@ Resources:
         import boto3
         import botocore
         import logging
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -265,6 +188,9 @@ Resources:
         import botocore
         import logging
         import uuid
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -323,6 +249,9 @@ Resources:
         import boto3
         import botocore
         import logging
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -371,6 +300,8 @@ Resources:
         import botocore
         import logging
         import json
+        import threading
+        
 
         client = boto3.client('networkmanager')
 
@@ -440,7 +371,7 @@ Resources:
 
             if 'region' in event.keys():
                 region_list = policy['core-network-configuration']['edge-locations']
-                region_list.append({'location': region}) 
+                region_list.append({'location': event['region']}) 
                 policy['core-network-configuration']['edge-locations'] = region_list
 
             # Q: How does one get region awareness for new branches discovered
@@ -519,6 +450,9 @@ Resources:
         import botocore
         import logging
         import uuid
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -569,6 +503,9 @@ Resources:
         import boto3
         import botocore
         import logging
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -620,6 +557,9 @@ Resources:
         import botocore
         import logging
         import uuid
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -678,6 +618,9 @@ Resources:
         import boto3
         import botocore
         import logging
+        import threading
+        import json
+        
 
         client = boto3.client('networkmanager')
 
@@ -712,7 +655,49 @@ Resources:
       Policies:
       - AWSNetworkManagerFullAccess
       - AWSAccountManagementReadOnlyAccess
+  CallbackLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Sends callback to CloudFormation to continue after Delete Step FUnction
+      Code:
+        ZipFile: !Sub |
+          import boto3
+          import json
+          import threading
+          
+          from botocore.vendored import requests
 
+          def handler(event, context):
+            print('Received event: %s' % json.dumps(event))
+            print(event['ResourceProperties']['WaitHandle'])
+            try:
+              requests_data=json.dumps(dict(Status='SUCCESS',Reason='Step Function Succeeded',UniqueId='12345',Data=event['ResourceProperties'])).encode('utf-8')
+              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
+              print (response)
+            except Exception as e:
+              print (e)
+      Handler: index.handler
+      Runtime: python3.6
+      Role: !GetAtt CallbackRole.Arn
+      Timeout: 300
+
+  CallbackRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: "/"
+##
+## State Machines
   CreateStateMachine:
     Type: AWS::Serverless::StateMachine
     DependsOn: 
@@ -749,9 +734,6 @@ Resources:
             - Variable: "$.GlobalNetworkStatus"
               StringEquals: AVAILABLE
               Next: Create core network
-            - Variable: "$.GlobalNetworkStatus"
-              StringEquals: FAILED
-              Next: Failed
             Default: Wait 10 seconds for global network
           Create core network:
             Type: Task
@@ -773,9 +755,6 @@ Resources:
             - Variable: "$.CoreNetworkStatus"
               StringEquals: AVAILABLE
               Next: Define network policy
-            - Variable: "$.CoreNetworkStatus"
-              StringEquals: FAILED
-              Next: Failed
             Default: Wait 10 seconds for core network
           Define network policy:
             Type: Task
@@ -797,16 +776,13 @@ Resources:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: READY_TO_EXECUTE
               Next: Execute network policy changeset
-            - Variable: "$.NetworkPolicyChangeSetState"
-              StringEquals: FAILED_GENERATION
-              Next: Failed
             Default: Wait 10 seconds for network policy
           Execute network policy changeset:
             Type: Task
             Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
             ResultPath: $.ChangeSetResponse
             Next: Wait 60 seconds for execute network policy changeset
-          Wait 60 seconds for execute core network changeset:
+          Wait 60 seconds for execute network policy changeset:
             Type: Wait
             Seconds: 60
             Next: Get network policy changeset status
@@ -820,11 +796,8 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: EXECUTION_SUCCEEDED
-              Next: Callback Lambda
-            - Variable: "$.NetworkPolicyChangeSetState"
-              StringEquals: FAILED_GENERATION
-              Next: Failed
-            Default: Wait 60 seconds for execute core network changeset
+              Next: CallBack Lambda
+            Default: Wait 60 seconds for execute network policy changeset
           CallBack Lambda:
             Type: Task
             Resource: arn:aws:states:::lambda:invoke
@@ -841,6 +814,7 @@ Resources:
               BackoffRate: 2
             End: true
             ResultPath: "$.callback"
+          
       Policies:
       - LambdaInvokePolicy:
           FunctionName: !Ref CreateGlobalNetworkFunction
@@ -867,65 +841,24 @@ Resources:
               source:
                 - com.aws.merakicloudwanquickstart
               detail-type:
-                - New meraki global network requested
+                - new meraki global network requested
               account:
                 - !Ref AWS::AccountId
                 
-  CreateNetworkStateMachineAdditionalRegion:
+  CreateNetworkNewRegion:
     Type: AWS::Serverless::StateMachine
+    DependsOn:
+    - CallbackLambda
+    - CreateVpcAttachmentFunction
+    - GetVpcAttachmentFunction
+    - UpdateNetworkPolicyFunction
+    - ExecuteCoreNetworkChangeSetFunction
+    - GetNetworkPolicyFunction
     Properties:
       Definition:
           Comment: State machine to update meraki global cloudwan network with additional region
-          StartAt: Update network policy
+          StartAt: Create Vpc Attachment
           States:
-            Update network policy:
-              Type: Task
-              Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
-              ResultPath: $.NetworkPolicyVersionId
-              Next: Wait 10 seconds for network policy
-            Wait 10 seconds for network policy:
-              Type: Wait
-              Seconds: 10
-              Next: Get policy status
-            Get policy status:
-              Type: Task
-              Resource: !GetAtt GetNetworkPolicyFunction.Arn
-              ResultPath: $.NetworkPolicyChangeSetState
-              Next: Network policy ready to execute?
-            Network policy ready to execute?:
-              Type: Choice
-              Choices:
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: READY_TO_EXECUTE
-                Next: Execute core network change set
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: FAILED_GENERATION
-                Next: Failed
-              Default: Wait 10 seconds for network policy
-            Execute core network change set:
-              Type: Task
-              Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
-              ResultPath: $.ChangeSetResponse
-              Next: Wait 60 seconds for execute core network changeset
-            Wait 60 seconds for execute core network changeset:
-              Type: Wait
-              Seconds: 60
-              Next: Get network policy changeset status
-            Get network policy changeset status:
-              Type: Task
-              Resource: !GetAtt GetNetworkPolicyFunction.Arn
-              ResultPath: $.NetworkPolicyChangeSetState
-              Next: Network policy change set executed?
-            Network policy change set executed?:
-              Type: Choice
-              Choices:
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: EXECUTION_SUCCEEDED
-                Next: Create Vpc Attachment
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: FAILED_GENERATION
-                Next: Failed
-              Default: Wait 60 seconds for execute core network changeset
             Create Vpc Attachment:
               Type: Task
               Resource: !GetAtt CreateVpcAttachmentFunction.Arn
@@ -946,9 +879,6 @@ Resources:
               - Variable: "$.VpcAttachmentState"
                 StringEquals: AVAILABLE
                 Next: Update network policy with attachment
-              - Variable: "$.VpcAttachmentState"
-                StringEquals: FAILED
-                Next: Failed
               Default: Wait 60 seconds for attachment creation
             Update network policy with attachment:
               Type: Task
@@ -973,9 +903,6 @@ Resources:
               - Variable: "$.NetworkPolicyChangeSetState"
                 StringEquals: READY_TO_EXECUTE
                 Next: Execute core network changeset with attachment
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: FAILED_GENERATION
-                Next: Failed
               Default: Wait 10 seconds for attachment network policy
             Execute core network changeset with attachment:
               Type: Task
@@ -996,17 +923,24 @@ Resources:
               Choices:
               - Variable: "$.NetworkPolicyChangeSetState"
                 StringEquals: EXECUTION_SUCCEEDED
-                Next: Done
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: FAILED_GENERATION
-                Next: Failed
+                Next: CallBack Lambda
               Default: Wait 60 seconds for execute core network changeset with attachment
-            Done:
-              Type: Pass
+            CallBack Lambda:
+              Type: Task
+              Resource: arn:aws:states:::lambda:invoke
+              Parameters:
+                Payload.$: "$"
+                FunctionName: !GetAtt CallbackLambda.Arn
+              Retry:
+              - ErrorEquals:
+                - Lambda.ServiceException
+                - Lambda.AWSLambdaException
+                - Lambda.SdkClientException
+                IntervalSeconds: 2
+                MaxAttempts: 6
+                BackoffRate: 2
               End: true
-            Failed:
-              Type: Pass
-              End: true
+              ResultPath: "$.callback"
       Policies:
       - LambdaInvokePolicy:
           FunctionName: !Ref UpdateNetworkPolicyFunction
@@ -1020,7 +954,7 @@ Resources:
           FunctionName: !Ref GetVpcAttachmentFunction
       
       Events:
-        CreateAddtionalRegionNetworkRule:
+        NewRegionRule:
           Type: EventBridgeRule
           Properties:
             EventBusName: !Ref MerakiEventBus
@@ -1029,12 +963,16 @@ Resources:
               source:
                 - com.aws.merakicloudwanquickstart
               detail-type:
-                - New meraki additional region requested
+                - new meraki additional region requested
               account:
                 - !Ref AWS::AccountId
 
   UpdateStateMachine:
     Type: AWS::Serverless::StateMachine
+    DependsOn:
+    - UpdateNetworkPolicyFunction
+    - ExecuteCoreNetworkChangeSetFunction
+    - GetNetworkPolicyFunction
     Properties:
       Definition:
         Comment: State machine to update meraki cloudwan global network
@@ -1060,9 +998,6 @@ Resources:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: READY_TO_EXECUTE
               Next: Execute core network change set
-            - Variable: "$.NetworkPolicyChangeSetState"
-              StringEquals: FAILED_GENERATION
-              Next: Failed
             Default: Wait 10 seconds for network policy
           Execute core network change set:
             Type: Task
@@ -1083,17 +1018,24 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: EXECUTION_SUCCEEDED
-              Next: Done
-            - Variable: "$.NetworkPolicyChangeSetState"
-              StringEquals: FAILED_GENERATION
-              Next: Failed
+              Next: CallBack Lambda
             Default: Wait 60 seconds for execute core network changeset
-          Done:
-            Type: Pass
+          CallBack Lambda:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              Payload.$: "$"
+              FunctionName: !GetAtt CallbackLambda.Arn
+            Retry:
+            - ErrorEquals:
+              - Lambda.ServiceException
+              - Lambda.AWSLambdaException
+              - Lambda.SdkClientException
+              IntervalSeconds: 2
+              MaxAttempts: 6
+              BackoffRate: 2
             End: true
-          Failed:
-            Type: Pass
-            End: true
+            ResultPath: "$.callback"
       Policies:
       - LambdaInvokePolicy:
           FunctionName: !Ref UpdateNetworkPolicyFunction
@@ -1114,10 +1056,11 @@ Resources:
                 - update global network requested
               account:
                 - !Ref AWS::AccountId
+
+
+
 ##
-##
-## Delete State Machine Resources
-  
+## Wait Condition  
   StateMachineWaitCondition:
     Type: AWS::CloudFormation::WaitCondition
     # DependsOn: 
@@ -1128,19 +1071,20 @@ Resources:
   
   StateMachineWaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
-
+##
+## Custom Resource for Events
   StateMachineCustomResource:
     Type: Custom::CloudWanLambda
     DependsOn: 
-      - CloudWanDeleteStepFunction
-      - MerakiEventBus
-      - CreateStateMachine
+    - CloudWanDeleteStepFunction
+    - CreateStateMachine
+    - UpdateStateMachine
+    - CreateNetworkNewRegion
+    - MerakiEventBus
     Properties:
       ServiceToken: !GetAtt StateMachineCustomResourceLambda.Arn
       WaitHandle: !Ref StateMachineWaitHandle
       EventBusName: !Ref 'MerakiEventBusName'
-      BaseRegion: !Ref 'BaseRegion'
-      BaseRegionName: !Ref 'BaseRegionName'
       Az1SubnetArn: !Sub
                 - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ1SubnetID}
                 - AZ1SubnetID: !Ref 'AvailabilityZone1SubnetID'
@@ -1157,6 +1101,7 @@ Resources:
 
   StateMachineCustomResourceLambda:
     Type: AWS::Lambda::Function
+    DependsOn: CreateStateMachine
     Properties:
       Description: Lambda for StateMachineCustomResource
       Handler: index.handler
@@ -1171,76 +1116,46 @@ Resources:
           import os
           from botocore.vendored import requests
 
-          sfn = boto3.client('stepfunctions')
           region = os.environ['AWS_REGION']
-          aws_client = boto3.client('events', region_name=base_region_name)
-          EventBusName = event['ResourceProperties']['EventBusName']
-          asn_range = event['ResourceProperties']['ASN_Range']
-          vpc_arn = event['ResourceProperties']['VPCArn']
-          az1_subnet_arns = event['ResourceProperties']['Az1SubnetArn']
-          az2_subnet_arns = event['ResourceProperties']['Az2SubnetArn']
-          subnet_arns = [az1_subnet_arn, az2_subnet_arn]
 
+          aws_client = boto3.client('events', region_name=region)
 
           def handler(event, context):
             print('Received event: %s' % json.dumps(event))
             status = cfnresponse.SUCCESS
             responseData = {}
+
+            EventBusName = event['ResourceProperties']['EventBusName']
+            asn_range = event['ResourceProperties']['ASN_Range']
+            vpc_arn = event['ResourceProperties']['VPCArn']
+            az1_subnet_arns = event['ResourceProperties']['Az1SubnetArn']
+            az2_subnet_arns = event['ResourceProperties']['Az2SubnetArn']
+            subnet_arns = [az1_subnet_arns, az2_subnet_arns]
+            global_network_name = event['ResourceProperties']['GlobalNetworkName']
+
             try:
               if event['RequestType'] == 'Create':
-                if base_region == 'Yes':
-                  response = aws_client.put_events(
-                    Entries=[
-                    {
-                        'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'New Meraki global network requested',
-                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": ['blackhole'], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
-                        'EventBusName': EventBusName
-                    }
-                    ]
-                  )
-                  responseData.append(response)
-                  response2 = aws_client.put_events(
-                    Entries=[
-                    {
-                        'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'New meraki additional region requested',
-                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
-                        'EventBusName': EventBusName
-                    }
-                    ]
-                  )
-                  responseData.append(response2)
-                elif base_region == 'No':
-                  response = aws_client.put_events(
-                      Entries=[
-                      {
-                          'Source': 'com.aws.merakicloudwanquickstart',
-                          'DetailType': 'New meraki additional region requested',
-                          'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
-                          'EventBusName': EventBusName
-                      }
-                      ]
-                  )
-                  responseData.append(response)
-                else:
-                  logger.error('Unsupported region type')
-
-                  ###eventually, needs to call the create 'step_functions
-                  ###for now,just pass in the waithandle token to say nothing needs to be waited on
-                  #print(event['ResourceProperties']['WaitHandle'])
-                  #requests_data=json.dumps(dict(Status='SUCCESS',Reason='wait timer not needed',UniqueId='12345',Data='Custom Resource Lambda')).encode('utf-8')
-                  #response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
-                  #print (response)       
-                  #print('Nothing to do') 
+                response = aws_client.put_events(
+                  Entries=[
+                  {
+                      'Source': 'com.aws.merakicloudwanquickstart',
+                      'DetailType': 'new meraki global network requested',
+                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": ['blackhole'], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+                      'EventBusName': EventBusName
+                  }
+                  ]
+                )
+                print(reponse)
+                responseData = response
+                 
               elif event['RequestType'] == 'Delete':
                 response = ec2.put_events(
                     Entries=[
                     {
                         'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'Delete Cloud WAN resources requested',
+                        'DetailType': 'delete cloudwan resources requested',
                         'Detail': json.dumps({}),
-                        'EventBusName': 'TestEventBus'
+                        'EventBusName': EventBusName
                     }
                     ]
                 )                     
@@ -1277,6 +1192,12 @@ Resources:
               Resource: "*"
 
 
+
+
+  
+
+##
+## Delete State Machine and Function Resources  
   CloudWanDeleteStepFunction:
     Type: AWS::Serverless::StateMachine
     DependsOn: 
@@ -1452,53 +1373,9 @@ Resources:
               source:
                 - com.aws.merakicloudwanquickstart
               detail-type:
-                - Delete Cloud WAN resources requested
+                - delete cloudwan resources requested
               # account:
               #   - !Ref AWS::AccountId        
-
-
-
-  CallbackLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      Description: Sends callback to CloudFormation to continue after Delete Step FUnction
-      Code:
-        ZipFile: !Sub |
-          import boto3
-          import json
-          from botocore.vendored import requests
-
-          def handler(event, context):
-            print('Received event: %s' % json.dumps(event))
-            print(event['ResourceProperties']['WaitHandle'])
-            try:
-              requests_data=json.dumps(dict(Status='SUCCESS',Reason='Step Function Succeeded',UniqueId='12345',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
-              print (response)
-            except Exception as e:
-              print (e)
-      Handler: index.handler
-      Runtime: python3.6
-      Role: !GetAtt CallbackRole.Arn
-      Timeout: 300
-
-  CallbackRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Path: "/"
-
-
 
   DeleteAttachmentsDSMFunction:
     Type: AWS::Serverless::Function
@@ -1755,9 +1632,10 @@ Outputs:
   UpdateStateMachine:
     Value: !Ref UpdateStateMachine
     Description: Update network Step Function Arn
-  CreateNetworkStateMachineAdditionalRegion:
-    Value: !Ref CreateNetworkStateMachineAdditionalRegion
+  CreateNetworkNewRegion:
+    Value: !Ref CreateNetworkNewRegion
     Description: Create network additional region Step Function Arn
   MerakiEventBusArn:
     Description: The ARN of the central event bus
     Value: !GetAtt MerakiEventBus.Arn
+  
