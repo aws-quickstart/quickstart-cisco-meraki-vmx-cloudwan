@@ -1145,7 +1145,7 @@ Resources:
                   }
                   ]
                 )
-                print(reponse)
+                print(response)
                 responseData = response
                  
               elif event['RequestType'] == 'Delete':
