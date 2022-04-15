@@ -830,20 +830,67 @@ Resources:
           FunctionName: !Ref GetNetworkPolicyFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
-      
-      Events:
-        CreateNetworkRule:
-          Type: EventBridgeRule
-          Properties:
-            EventBusName: !Ref MerakiEventBus
-            InputPath: $.detail
-            Pattern:
-              source:
-                - com.aws.merakicloudwanquickstart
-              detail-type:
-                - new meraki global network requested
-              account:
-                - !Ref AWS::AccountId
+      # Events:
+      #   CreateNetworkRule:
+      #     Type: EventBridgeRule
+      #     Properties:
+      #       EventBusName: !Ref MerakiEventBus
+      #       InputPath: $.detail
+      #       Pattern:
+      #         source:
+      #           - com.aws.merakicloudwanquickstart
+      #         detail-type:
+      #           - new meraki global network requested
+      #         account:
+      #           - !Ref AWS::AccountId
+
+  CreateNetworkEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Meraki Create Network
+      EventBusName: !Ref MerakiEventBus
+      EventPattern:
+        source:
+          - com.aws.merakicloudwanquickstart
+        detail-type:
+          - new meraki global network requested
+        account:
+          - !Ref AWS::AccountId
+      State: ENABLED
+      RoleArn: !GetAtt 
+        - ExecuteStateMachineRole
+        - Arn
+      Targets:
+        - Arn:
+            Ref: CreateStateMachine
+          RoleArn: !GetAtt 
+            - ExecuteStateMachineRole
+            - Arn
+          Id: CreateNetworkStepFunction
+          InputPath: $.detail
+  ExecuteStateMachineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: ExecuteStateMachinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - states:StartExecution
+              Resource:
+              - arn:aws:states:*:*:stateMachine:*
                 
   CreateNetworkNewRegion:
     Type: AWS::Serverless::StateMachine
@@ -1101,7 +1148,9 @@ Resources:
 
   StateMachineCustomResourceLambda:
     Type: AWS::Lambda::Function
-    DependsOn: CreateStateMachine
+    DependsOn: 
+    - CreateStateMachine
+    - CreateNetworkEventRule
     Properties:
       Description: Lambda for StateMachineCustomResource
       Handler: index.handler

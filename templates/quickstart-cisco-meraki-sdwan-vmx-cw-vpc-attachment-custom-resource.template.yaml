@@ -140,18 +140,3 @@ Resources:
               Action: "*"
               Resource: "*"
 
-
-  
-Outputs:
-  CreateStateMachine:
-    Value: !Ref CreateStateMachine
-    Description: Create network Step Function Arn
-  UpdateStateMachine:
-    Value: !Ref UpdateStateMachine
-    Description: Update network Step Function Arn
-  CreateNetworkNewRegion:
-    Value: !Ref CreateNetworkNewRegion
-    Description: Create network additional region Step Function Arn
-  MerakiEventBusArn:
-    Description: The ARN of the central event bus
-    Value: !GetAtt MerakiEventBus.Arn
