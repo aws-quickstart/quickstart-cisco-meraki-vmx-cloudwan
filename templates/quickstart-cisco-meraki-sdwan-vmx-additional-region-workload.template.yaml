@@ -27,7 +27,10 @@ Metadata:
           - AZ1PublicSubnetID
           - AZ2PublicSubnetID
           - VPCRouteTableID
-          - MerakiEventBusArn
+#          - MerakiEventBusArn
+          - MerakiEventBusName
+          - GlobalNetworkName
+          - AmazonASNRange
       - Label:
           default: EC2 configuration
         Parameters:
@@ -78,8 +81,14 @@ Metadata:
         default: Quick Start S3 key prefix
       LambdaRate:
         default: CloudWatch Events rule rate
-      MerakiEventBusArn:
-        default: "MerakiEventBusArn"
+#      MerakiEventBusArn:
+#        default: "MerakiEventBusArn"
+      MerakiEventBusName:
+        default: "Meraki CloudWAN EventBus Name"
+      GlobalNetworkName:
+        default: "Meraki CloudWAN Global network name"
+      AmazonASNRange:
+        default: CloudWAN ASN Range
 Parameters:
   MerakiOrgID:
     Description: Meraki organization ID.
@@ -183,8 +192,14 @@ Parameters:
       - rate(10 minutes)
       - rate(60 minutes)
     Type: String
-  BaseRegionStackName:
-    Description: Enter either the Base Region entrypoint or workload Stack Name
+  MerakiEventBusName:
+    Description: The Meraki Event Bus Name
+    Type: String
+  GlobalNetworkName:
+    Description: The Meraki Event Bus Name
+    Type: String
+  AmazonASNRange:
+    Description: Autonomous System Number (ASN) for CloudWAN Network. 
     Type: String
 
 Conditions:
@@ -241,23 +256,15 @@ Resources:
         vMXMerakiNetworkTag:
           Ref: vMX2MerakiNetworkTag
 
-  StepFunctionStack:
+  CustomResourceStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL:
         !Sub
-          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cwstepfunction.template.yaml
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cw-vpc-attachment-custom-resource.template.yaml
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
-          QSS3BucketName:
-            Ref: QSS3BucketName
-          QSS3KeyPrefix:
-            Ref: QSS3KeyPrefix
-          QSS3BucketRegion:
-            Ref: QSS3BucketRegion
-          GlobalNetworkName:
-            Ref: GlobalNetworkName
           AvailabilityZone1SubnetID:
             Ref: AZ1PublicSubnetID
           AvailabilityZone2SubnetID:
@@ -266,19 +273,58 @@ Resources:
             Ref: VPCID
           AmazonASNRange:
             Ref: AmazonASNRange
-          MerakiEventBusArn: 
-            Fn::ImportValue: 
-              !Sub "${BaseRegionStackName}-MerakiEventBusArn"
-          # Change this to ImportValue from base region stack
-          BaseRegionName: 
-            Fn::ImportValue:
-              !Sub "${BaseRegionStackName}-BaseRegion"
+          #MerakiEventBusArn: 
+          #  Ref: MerakiEventBusArn
+          #BaseRegionName: 
+          #  Fn::ImportValue:
+          #    !Sub "${BaseRegionStackName}-BaseRegion"
           MerakiEventBusName:
-            Fn::ImportValue:
-              !Sub "${BaseRegionStackName}-MerakiEventBusName"
-          BaseRegion: "No"
+            Ref: MerakiEventBusName
+          GlobalNetworkName:
+            Ref: GlobalNetworkName
+          #BaseRegion: "No"
           
-
+  MerakiLambdaStack:
+    DependsOn: CustomResourceStack 
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:
+        !Sub
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cw-lambda.template.yaml
+          - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+            S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+          AvailabilityZone1SubnetID:
+            Ref: AZ1PublicSubnetID
+          AvailabilityZone2SubnetID:
+            Ref: AZ2PublicSubnetID
+          VPCID:
+            Ref: VPCID
+          AmazonSideASN:
+            Ref: AmazonASNRange
+          QSS3BucketName:
+            Ref: QSS3BucketName
+          QSS3KeyPrefix:
+            Ref: QSS3KeyPrefix
+          QSS3BucketRegion:
+            Ref: QSS3BucketRegion
+          SDWANVPCRTID:
+            Ref: VPCRouteTableID
+          #get MerakiAPIKey and MerakiOrgID from secrets manager
+          MerakiAPIKey:
+            Ref: MerakiAPIKey
+          MerakiOrgID:
+            Ref: MerakiOrgID
+          vMX1MerakiNetworkTag:
+            Ref: vMX1MerakiNetworkTag
+          vMX2MerakiNetworkTag:
+            Ref: vMX2MerakiNetworkTag
+          LambdaRate:
+            Ref: LambdaRate
+          MerakiEventBusName:
+            Ref: MerakiEventBusName
+          #BaseRegionName:
+          #  Ref: AWS::Region
           
 Outputs:
   VPCID:

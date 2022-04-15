@@ -26,7 +26,7 @@ Metadata:
           - VPCCIDR
           - AvailabilityZone1CIDR
           - AvailabilityZone2CIDR
-          - AmazonSideASNRange
+          - AmazonASNRange
           - GlobalNetworkName
           - MerakiEventBusName
       - Label:
@@ -77,11 +77,9 @@ Metadata:
         default: Quick Start S3 bucket Region
       QSS3KeyPrefix:
         default: Quick Start S3 key prefix
-      AmazonSideASN:
-        default: Transit gateway ASN
       LambdaRate:
         default: CloudWatch Events rule rate
-      AmazonSideASNRange:
+      AmazonASNRange:
         default: CloudWAN ASN Range
       GlobalNetworkName:
         default: CloudWAN Global Network name
@@ -183,9 +181,6 @@ Parameters:
     Description: EC2 key pair name.
     ConstraintDescription: Must be the name of an existing EC2 key pair. vMX instances launch with this key pair.
     Type: "AWS::EC2::KeyPair::KeyName"
-  AmazonSideASN:
-    Description: Autonomous System Number (ASN) for the transit gateway.
-    Type: String
   LambdaRate:
     Description: How often the CloudWatch Events rule runs. The rule invokes AWS Lambda to update the VPC and transit gateway route tables. 
     Default: rate(10 minutes)
@@ -204,7 +199,7 @@ Parameters:
     Default: vMX2
   GlobalNetworkName:
     Description: AWS CloudWAN Global Network Name
-    Default: "meraki_gn"
+    Default: "meraki-gn"
     Type: String
   AmazonASNRange:
     Description: Autonomous System Number (ASN) for CloudWAN Network. 
@@ -214,6 +209,7 @@ Parameters:
     Description: Name of CustomEventBus for EventBridge
     Default: "MerakiEventBus"
     Type: String
+
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -244,7 +240,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-workload.template.yaml
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cw-workload.template.yaml
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -282,8 +278,8 @@ Resources:
           Fn::GetAtt:
           - VPCStack 
           - Outputs.PublicSubnetRouteTable
-        AmazonSideASN:
-          Ref: AmazonSideASN
+        AmazonASNRange:
+          Ref: AmazonASNRange
         LambdaRate:
           Ref: LambdaRate
         QSS3BucketName:
@@ -326,31 +322,24 @@ Outputs:
       Fn::GetAtt:
       - WorkloadStack
       - Outputs.MerakiEventBusArn
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-MerakiEventBusArn'
   CreateNetworkStateMachineAdditionalRegion:
     Description: The create network step function arn for additional region 
     Value:
       Fn::GetAtt:
       - WorkloadStack
       - Outputs.CreateNetworkStateMachineAdditionalRegion
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-CreateNetworkStateMachineAdditionalRegion'
   BaseRegion:
     Description: Base Region value
     Value: !Ref "AWS::Region"
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-BaseRegion'
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Value: !Ref MerakiEventBusName
-    Export:
-      Name:
-        'Fn::Sub': '${AWS::StackName}-MerakiEventBusName'
-  
+  GlobalNetworkName:
+    Description: The Meraki Event Bus Name
+    Value: !Ref GlobalNetworkName
+  AmazonASNRange:
+    Description: The Meraki cloudWAN ASN Range Name
+    Value: !Ref AmazonASNRange
   
   Postdeployment:
     Description: See the deployment guide for postdeployment steps.
