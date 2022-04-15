@@ -52,12 +52,6 @@ Conditions:
   AmazonASNRange: !Equals [!Ref AmazonASNRange, '']
 
 Resources:
-##
-## Event Bus
-  MerakiEventBus:
-    Type: AWS::Events::EventBus
-    Properties:
-      Name: !Ref MerakiEventBusName
 
 ##
 ## Functions  
@@ -835,7 +829,7 @@ Resources:
         CreateNetworkRule:
           Type: EventBridgeRule
           Properties:
-            EventBusName: !Ref MerakiEventBus
+            EventBusName: !Ref MerakiEventBusName
             InputPath: $.detail
             Pattern:
               source:
@@ -957,7 +951,7 @@ Resources:
         NewRegionRule:
           Type: EventBridgeRule
           Properties:
-            EventBusName: !Ref MerakiEventBus
+            EventBusName: !Ref MerakiEventBusName
             InputPath: $.detail
             Pattern:
               source:
@@ -1047,7 +1041,7 @@ Resources:
         UpdateNetworkRule:
           Type: EventBridgeRule
           Properties:
-            EventBusName: !Ref MerakiEventBus
+            EventBusName: !Ref MerakiEventBusName
             InputPath: $.detail
             Pattern:
               source:
@@ -1076,11 +1070,9 @@ Resources:
   StateMachineCustomResource:
     Type: Custom::CloudWanLambda
     DependsOn: 
-    - CloudWanDeleteStepFunction
     - CreateStateMachine
     - UpdateStateMachine
     - CreateNetworkNewRegion
-    - MerakiEventBus
     Properties:
       ServiceToken: !GetAtt StateMachineCustomResourceLambda.Arn
       WaitHandle: !Ref StateMachineWaitHandle
@@ -1203,7 +1195,5 @@ Outputs:
   CreateNetworkNewRegion:
     Value: !Ref CreateNetworkNewRegion
     Description: Create network additional region Step Function Arn
-  MerakiEventBusArn:
-    Description: The ARN of the central event bus
-    Value: !GetAtt MerakiEventBus.Arn
+
   
