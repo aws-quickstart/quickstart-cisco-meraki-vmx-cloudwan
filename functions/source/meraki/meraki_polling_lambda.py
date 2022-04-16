@@ -186,13 +186,21 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
     network_name = global_network_name
     region = os.environ['AWS_REGION']
     input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
-    ec2 = boto3.client('events', region_name=base_region_name)
-    response = ec2.put_events(
+    aws_events_client = boto3.client('events', region_name=base_region_name)
+    aws_nm_client = boto3.client('networkmanager')
+    attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region)
+    for attachment in attachments.items():
+        if attachment[0] == 'Attachments':
+            if attachment[1][0]['Tags'][0]['Key'] == 'Name':
+                if attachment[1][0]['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
+                    vpc_attachment_id = attachment[1][0]['AttachmentId']
+                    core_network_id = attachment[1][0]['CoreNetworkId']
+    response = aws_events_client.put_events(
         Entries=[
         {
             'Source': 'com.aws.merakicloudwanquickstart',
             'DetailType': 'update global network requested',
-            'Detail': json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+            'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [vpn_routes], "VpcAttachmentID": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
             'EventBusName': 'MerakiEventBus'
         }
         ]
