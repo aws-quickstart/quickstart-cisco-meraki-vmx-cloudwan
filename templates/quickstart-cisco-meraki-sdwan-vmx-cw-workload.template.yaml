@@ -254,8 +254,24 @@ Resources:
         vMXMerakiNetworkTag:
           Ref: vMX2MerakiNetworkTag
 
+  DeleteStack:
+    Type: AWS::CloudFormation::Stack
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TemplateURL:
+        !Sub
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-delete.template.yaml
+          - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
+            S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
+      Parameters:
+        MerakiEventBusName:
+          Ref: MerakiEventBusName    
+        #Need to add either global network property or a tag to pass along to delete step function
+
   StepFunctionStack:
     Type: AWS::CloudFormation::Stack
+    DependsOn: DeleteStack
     Properties:
       TemplateURL:
         !Sub
