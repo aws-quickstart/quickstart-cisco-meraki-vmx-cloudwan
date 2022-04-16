@@ -903,9 +903,6 @@ Resources:
     - CallbackLambda
     - CreateVpcAttachmentFunction
     - GetVpcAttachmentFunction
-    - UpdateNetworkPolicyFunction
-    - ExecuteCoreNetworkChangeSetFunction
-    - GetNetworkPolicyFunction
     Properties:
       Definition:
           Comment: State machine to update meraki global cloudwan network with additional region
@@ -924,59 +921,14 @@ Resources:
               Type: Task
               Resource: !GetAtt GetVpcAttachmentFunction.Arn
               ResultPath: $.VpcAttachmentState
-              Next: Ready to update network policy?
-            Ready to update network policy?:
+              Next: VPC attachment created?
+            VPC attachment created?:
               Type: Choice
               Choices:
               - Variable: "$.VpcAttachmentState"
                 StringEquals: AVAILABLE
-                Next: Update network policy with attachment
-              Default: Wait 60 seconds for attachment creation
-            Update network policy with attachment:
-              Type: Task
-              Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
-              Parameters:
-                Destinations.$: "$.Destinations"
-                CoreNetworkId.$: "$.CoreNetworkId"
-              ResultPath: $.NetworkPolicyVersionId
-              Next: Wait 10 seconds for attachment network policy
-            Wait 10 seconds for attachment network policy:
-              Type: Wait
-              Seconds: 10
-              Next: Get attachment network policy status
-            Get attachment network policy status:
-              Type: Task
-              Resource: !GetAtt GetNetworkPolicyFunction.Arn
-              ResultPath: $.NetworkPolicyChangeSetState
-              Next: Attachment Network policy ready?
-            Attachment Network policy ready?:
-              Type: Choice
-              Choices:
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: READY_TO_EXECUTE
-                Next: Execute core network changeset with attachment
-              Default: Wait 10 seconds for attachment network policy
-            Execute core network changeset with attachment:
-              Type: Task
-              Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
-              ResultPath: $.ChangeSetResponse
-              Next: Wait 60 seconds for execute core network changeset with attachment
-            Wait 60 seconds for execute core network changeset with attachment:
-              Type: Wait
-              Seconds: 60
-              Next: Get attachment network policy changeset status
-            Get attachment network policy changeset status:
-              Type: Task
-              Resource: !GetAtt GetNetworkPolicyFunction.Arn
-              ResultPath: $.NetworkPolicyChangeSetState
-              Next: Attachment network policy change set ready to execute?
-            Attachment network policy change set ready to execute?:
-              Type: Choice
-              Choices:
-              - Variable: "$.NetworkPolicyChangeSetState"
-                StringEquals: EXECUTION_SUCCEEDED
                 Next: CallBack Lambda
-              Default: Wait 60 seconds for execute core network changeset with attachment
+              Default: Wait 60 seconds for attachment creation
             CallBack Lambda:
               Type: Task
               Resource: arn:aws:states:::lambda:invoke
@@ -994,12 +946,6 @@ Resources:
               End: true
               ResultPath: "$.callback"
       Policies:
-      - LambdaInvokePolicy:
-          FunctionName: !Ref UpdateNetworkPolicyFunction
-      - LambdaInvokePolicy:
-          FunctionName: !Ref GetNetworkPolicyFunction
-      - LambdaInvokePolicy:
-          FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref CreateVpcAttachmentFunction
       - LambdaInvokePolicy:
