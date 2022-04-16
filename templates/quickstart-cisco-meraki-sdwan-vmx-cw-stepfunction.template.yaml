@@ -71,6 +71,7 @@ Resources:
         import uuid
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -82,7 +83,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -108,8 +109,8 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
             return global_network_id
@@ -132,6 +133,7 @@ Resources:
         import logging
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -143,7 +145,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -159,8 +161,8 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
 
@@ -184,6 +186,7 @@ Resources:
         import uuid
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -195,7 +198,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -221,8 +224,8 @@ Resources:
             
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
             
@@ -245,6 +248,7 @@ Resources:
         import logging
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -256,7 +260,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -271,8 +275,8 @@ Resources:
               )
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
 
@@ -295,6 +299,7 @@ Resources:
         import logging
         import json
         import threading
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -326,13 +331,6 @@ Resources:
                     }
                 ]
                 policy['segment-actions'] = [
-                    {
-                        'action': "create-route",
-                        'segment': 'sdwan',
-                        'destination-cidr-blocks': [],
-                        'destinations': ['blackhole'],
-                        'description': 'create route for branch traffic to go out via SD-WAN VPC Attachment'
-                    },
                     {
                         'action': 'share',
                         'mode': 'attachment-route',
@@ -371,20 +369,28 @@ Resources:
             # Q: How does one get region awareness for new branches discovered
             # as an enhancement, may want to implement the case to create a new route when one doesn't exist on an existing policy
             if 'destination_cidr_blocks' in event.keys():
-                # append to destination-cidr-blocks in create-route action only for 'sdwan' segment
+                # walk through each segment-action
                 for action in policy['segment-actions']:
                     # does create-route action exist?
                     if action['action'] == 'create-route':
-                        # append cidr if 'sdwan segment exists
-                        if action['segment'] == 'sdwan':
+                        # if destination exists, append destination-cidr-blocks
+                        if event['VpcAttachmentId'] in action['destinations']:
                             for cidr in event['destination_cidr_blocks']:
                                 action['destination-cidr-blocks'].append(cidr)
+                        # Create new create-route segment-action
+                        else:
+                            policy['segment-actions']['action'] = 'create-route'
+                            policy['segment-actions']['segment'] = 'sdwan'
+                            policy['segment-actions']['destination-cidr-blocks'] = event['destination_cidr_blocks']
+                            policy['segment-actions']['destinations'] = event['VpcAttachmentId']
+                            policy['segment-actions']['description'] = 'create route for branch traffic to go out via SD-WAN VPC Attachment with ID ' + event['VpcAttachmentId'] ' in region ' + event['regions'] 
 
             if 'Destinations' in event.keys():
+                # Create new create-route segment action with destination set to attachment and an initial destination-cidr-block
                 # if create-route segment-action exists, append destination if no 'blackhole' exists otherwise replace 'blackhole'
                 for action in policy['segment-actions']:
                     if action['action'] == 'create-route':
-                        # append destinaciont only to 'sdwan' segment exists
+                        # append destination only to 'sdwan' segment exists
                         if action['segment'] == 'sdwan':
                             if action['destinations'] == ['blackhole']:
                                 action['destinations'] = [event['Destinations']]
@@ -398,8 +404,8 @@ Resources:
 
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
-            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='GlobalNetworkStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -421,8 +427,8 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
 
@@ -446,6 +452,7 @@ Resources:
         import uuid
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -457,7 +464,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -474,8 +481,8 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
 
@@ -499,6 +506,7 @@ Resources:
         import logging
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -510,7 +518,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -527,8 +535,8 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
 
@@ -553,6 +561,7 @@ Resources:
         import uuid
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -564,7 +573,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -589,8 +598,8 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
             return VpcAttachmentId
@@ -614,6 +623,7 @@ Resources:
         import logging
         import threading
         import json
+        from botocore.vendored import requests
         
 
         client = boto3.client('networkmanager')
@@ -625,7 +635,7 @@ Resources:
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
-            response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
             sys.exit(1)
 
         def lambda_handler(event,context):
@@ -640,8 +650,8 @@ Resources:
               )
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
 
@@ -663,10 +673,10 @@ Resources:
 
           def handler(event, context):
             print('Received event: %s' % json.dumps(event))
-            print(event['ResourceProperties']['WaitHandle'])
+            print(event['WaitHandle'])
             try:
-              requests_data=json.dumps(dict(Status='SUCCESS',Reason='Step Function Succeeded',UniqueId='12345',Data=event['ResourceProperties'])).encode('utf-8')
-              response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
+              requests_data=json.dumps(dict(Status='SUCCESS',Reason='Step Function Succeeded',UniqueId='12345',Data=event)).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
               print (response)
             except Exception as e:
               print (e)
@@ -824,20 +834,68 @@ Resources:
           FunctionName: !Ref GetNetworkPolicyFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
-      
-      Events:
-        CreateNetworkRule:
-          Type: EventBridgeRule
-          Properties:
-            EventBusName: !Ref MerakiEventBusName
-            InputPath: $.detail
-            Pattern:
-              source:
-                - com.aws.merakicloudwanquickstart
-              detail-type:
-                - new meraki global network requested
-              account:
-                - !Ref AWS::AccountId
+      # Events:
+      #   CreateNetworkRule:
+      #     Type: EventBridgeRule
+      #     Properties:
+      #       EventBusName: !Ref MerakiEventBus
+      #       InputPath: $.detail
+      #       Pattern:
+      #         source:
+      #           - com.aws.merakicloudwanquickstart
+      #         detail-type:
+      #           - new meraki global network requested
+      #         account:
+      #           - !Ref AWS::AccountId
+
+  CreateNetworkEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: Meraki Create Network
+      EventBusName: !Ref MerakiEventBus
+      EventPattern:
+        source:
+          - com.aws.merakicloudwanquickstart
+        detail-type:
+          - new meraki global network requested
+        account:
+          - !Ref AWS::AccountId
+      State: ENABLED
+      RoleArn: !GetAtt 
+        - ExecuteStateMachineRole
+        - Arn
+      Targets:
+        - Arn:
+            Ref: CreateStateMachine
+          RoleArn: !GetAtt 
+            - ExecuteStateMachineRole
+            - Arn
+          Id: CreateNetworkStepFunction
+          InputPath: $.detail
+  ExecuteStateMachineRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: ExecuteStateMachinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action:
+              - states:StartExecution
+              Resource:
+              - arn:aws:states:*:*:stateMachine:*
+
                 
   CreateNetworkNewRegion:
     Type: AWS::Serverless::StateMachine
@@ -1093,7 +1151,9 @@ Resources:
 
   StateMachineCustomResourceLambda:
     Type: AWS::Lambda::Function
-    DependsOn: CreateStateMachine
+    DependsOn: 
+    - CreateStateMachine
+    - CreateNetworkEventRule
     Properties:
       Description: Lambda for StateMachineCustomResource
       Handler: index.handler
@@ -1132,7 +1192,7 @@ Resources:
                   {
                       'Source': 'com.aws.merakicloudwanquickstart',
                       'DetailType': 'new meraki global network requested',
-                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": ['blackhole'], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns], "WaitHandle": event['ResourceProperties']['WaitHandle']}),
                       'EventBusName': EventBusName
                   }
                   ]
@@ -1146,7 +1206,7 @@ Resources:
                     {
                         'Source': 'com.aws.merakicloudwanquickstart',
                         'DetailType': 'delete cloudwan resources requested',
-                        'Detail': json.dumps({}),
+                        'Detail': json.dumps({"WaitHandle": event['ResourceProperties']['WaitHandle']}),
                         'EventBusName': EventBusName
                     }
                     ]

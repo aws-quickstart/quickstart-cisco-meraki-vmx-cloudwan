@@ -103,7 +103,7 @@ Resources:
                   {
                       'Source': 'com.aws.merakicloudwanquickstart',
                       'DetailType': 'new meraki additional region requested',
-                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": ['blackhole'], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns], , "WaitHandle": event['ResourceProperties']['WaitHandle']}),
                       'EventBusName': EventBusName
                   }
                   ]
@@ -140,18 +140,3 @@ Resources:
               Action: "*"
               Resource: "*"
 
-
-  
-Outputs:
-  CreateStateMachine:
-    Value: !Ref CreateStateMachine
-    Description: Create network Step Function Arn
-  UpdateStateMachine:
-    Value: !Ref UpdateStateMachine
-    Description: Update network Step Function Arn
-  CreateNetworkNewRegion:
-    Value: !Ref CreateNetworkNewRegion
-    Description: Create network additional region Step Function Arn
-  MerakiEventBusArn:
-    Description: The ARN of the central event bus
-    Value: !GetAtt MerakiEventBus.Arn
