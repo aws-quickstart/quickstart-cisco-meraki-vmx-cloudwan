@@ -834,6 +834,8 @@ Resources:
           FunctionName: !Ref GetNetworkPolicyFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CallbackLambda            
       # Events:
       #   CreateNetworkRule:
       #     Type: EventBridgeRule
@@ -950,7 +952,8 @@ Resources:
           FunctionName: !Ref CreateVpcAttachmentFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref GetVpcAttachmentFunction
-      
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CallbackLambda      
       Events:
         NewRegionRule:
           Type: EventBridgeRule
@@ -1041,6 +1044,8 @@ Resources:
           FunctionName: !Ref GetNetworkPolicyFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref CallbackLambda              
       Events:
         UpdateNetworkRule:
           Type: EventBridgeRule

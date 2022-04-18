@@ -263,19 +263,24 @@ Resources:
         def lambda_handler(event, context):
             #print(event)
             print(event['networkDetails']['Payload'])
-            attachments = event['networkDetails']['Payload']['Attachments']
-            #delete attachments
-            #if deleting state, pass , else fail
-            for attachment in attachments:
-                #print(attachment)
-                response = client.delete_attachment(AttachmentId=attachment)
-                print(response)
-                if response['Attachment']['State'] == 'DELETING':
-                    print('DELETING',attachment)
-                else:
-                    #to-do: error handling
-                    print('ERROR',attachment)
-                    return('ERROR')
+            try:
+              attachments = event['networkDetails']['Payload']['Attachments']
+              #delete attachments
+              #if deleting state, pass , else fail
+              for attachment in attachments:
+                  #print(attachment)
+                  response = client.delete_attachment(AttachmentId=attachment)
+                  print(response)
+                  if response['Attachment']['State'] == 'DELETING':
+                      print('DELETING',attachment)
+                  else:
+                      #to-do: error handling
+                      print('ERROR',attachment)
+                      return('ERROR')
+            except Exception as e:
+                print(e)
+                print('No attachments to delete?')
+                #add specific error handling          
 
             return('DELETING')
       Policies:
