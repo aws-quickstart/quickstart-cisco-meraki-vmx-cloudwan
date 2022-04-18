@@ -129,7 +129,7 @@ Resources:
             ResultPath: "$.attachmentsDeleteExecuted"
           Wait 1 minute:
             Type: Wait
-            Seconds: 10
+            Seconds: 60
             Next: Get Attachment Status
           Get Attachment Status:
             Type: Task
@@ -172,7 +172,7 @@ Resources:
             ResultPath: "$.coreDeleteExecuted"
           Wait 5 Minutes:
             Type: Wait
-            Seconds: 10
+            Seconds: 300
             Next: Get Core Network Status
           Get Core Network Status:
             Type: Task
