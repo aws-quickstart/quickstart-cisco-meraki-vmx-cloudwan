@@ -300,7 +300,7 @@ Resources:
         import json
         import threading
         from botocore.vendored import requests
-        
+
 
         client = boto3.client('networkmanager')
 
@@ -374,34 +374,22 @@ Resources:
                     # does create-route action exist?
                     if action['action'] == 'create-route':
                         # if destination exists, append destination-cidr-blocks
-                        if event['VpcAttachmentId'] in action['destinations']:
-                            for cidr in event['destination_cidr_blocks']:
-                                action['destination-cidr-blocks'].append(cidr)
-                        # Create new create-route segment-action
-                        else:
-                            policy['segment-actions']['action'] = 'create-route'
-                            policy['segment-actions']['segment'] = 'sdwan'
-                            policy['segment-actions']['destination-cidr-blocks'] = event['destination_cidr_blocks']
-                            policy['segment-actions']['destinations'] = event['VpcAttachmentId']
-                            policy['segment-actions']['description'] = 'create route for branch traffic to go out via SD-WAN VPC Attachment with ID ' + event['VpcAttachmentId'] + ' in region ' + event['regions'] 
+                        if action['destinations'] == event['VpcAttachmentId']:
+                            action['destination-cidr-blocks'] = event['destination_cidr_blocks']
+                            return policy
+                        
 
-            if 'Destinations' in event.keys():
-                # Create new create-route segment action with destination set to attachment and an initial destination-cidr-block
-                # if create-route segment-action exists, append destination if no 'blackhole' exists otherwise replace 'blackhole'
-                for action in policy['segment-actions']:
-                    if action['action'] == 'create-route':
-                        # append destination only to 'sdwan' segment exists
-                        if action['segment'] == 'sdwan':
-                            if action['destinations'] == ['blackhole']:
-                                action['destinations'] = [event['Destinations']]
-                            else:
-                                for destination in event['Destinations']:
-                                    action['destinations'].append(destination)
+                segment_action = {
+                    "action": "create-route",
+                    "segment": "sdwan",
+                    "destination-cidr-blocks": event['destination_cidr_blocks'],
+                    "destinations": event['VpcAttachmentId'],
+                    "description": 'create route for branch traffic to go out via SD-WAN VPC Attachment with ID ' + str(event['VpcAttachmentId'][0]) + ' in region ' + str(event['regions'][0]) 
+                }
 
-            # as an enhancement, may want to implement the case to create a new attachment policy when one doesn't exist on an existing policy
-        
-            return policy
-
+                policy['segment-actions'].append(segment_action)
+                return policy
+                        
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='GlobalNetworkStates',Data='failed due to timeout')).encode('utf-8')
@@ -895,8 +883,8 @@ Resources:
               - states:StartExecution
               Resource:
               - arn:aws:states:*:*:stateMachine:*
-
                 
+
   CreateNetworkNewRegion:
     Type: AWS::Serverless::StateMachine
     DependsOn:
