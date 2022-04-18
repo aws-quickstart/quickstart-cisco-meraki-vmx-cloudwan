@@ -852,7 +852,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: Meraki Create Network
-      EventBusName: !Ref MerakiEventBus
+      EventBusName: !Ref MerakiEventBusName
       EventPattern:
         source:
           - com.aws.merakicloudwanquickstart
