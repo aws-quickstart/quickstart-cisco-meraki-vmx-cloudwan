@@ -186,18 +186,21 @@ Resources:
           global_network_name: !Ref 'GlobalNetworkName'
            # we'll need to change the way regions list is passed for latest multi-regio design
           event_bus_name: !Ref 'MerakiEventBusName'
-          update_state_machine: !Ref 'UpdateStateMachineARN'
+          #update_state_machine: !Ref 'UpdateStateMachineARN'   #using eventbus instead
           base_region_name: !Ref 'BaseRegionName'
   
   PollingLambdaSchedulePermission:
     Type: "AWS::Lambda::Permission"
     Properties:
       Action: 'lambda:InvokeFunction'
-      FunctionName: !Sub ${PollingLambda.Arn}
+      #FunctionName: !Sub ${PollingLambda.Arn}  #josh - attempting to fix lint errors
+      FunctionName: !Sub ${PollingLambdaFunction.Arn}
       Principal: 'events.amazonaws.com'
-      SourceArn: !Sub ${LambdaSchedule.Arn}
+      #SourceArn: !Sub ${LambdaSchedule.Arn}   #josh - attempting to fix lint errors
+      SourceArn: !Sub ${PollingLambdaSchedule.Arn}
     DependsOn:
-      - LambdaSchedule
+      #- LambdaSchedule
+      - PollingLambdaSchedule
 
   PollingLambdaSchedule:
     Type: "AWS::Events::Rule"
@@ -213,7 +216,7 @@ Resources:
       - PollingLambdaFunction
   
 Outputs:
-  CustomResourceLambda:
-    Value: !Ref 'CreateLambdaFunction'
+  #CustomResourceLambda: #josh - attempting to fix lint errors
+    #Value: !Ref 'CreateLambdaFunction'
   PollingLambda:
     Value: !Ref 'PollingLambdaFunction'
