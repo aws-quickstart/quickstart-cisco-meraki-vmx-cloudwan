@@ -41,10 +41,10 @@ Resources:
   StateMachineWaitHandle:
     Type: AWS::CloudFormation::WaitConditionHandle
 
-  StateMachineCustomResource:
-    Type: Custom::CloudWanLambda
+  VpcAttachmentCustomResource:
+    Type: Custom::VpcAttachmentLambda
     Properties:
-      ServiceToken: !GetAtt StateMachineCustomResourceLambda.Arn
+      ServiceToken: !GetAtt VpcAttachmentCustomResourceLambda.Arn
       WaitHandle: !Ref StateMachineWaitHandle
       EventBusName: !Ref 'MerakiEventBusName'
       Az1SubnetArn: !Sub
@@ -61,13 +61,13 @@ Resources:
       ASN_Range: !Ref 'AmazonASNRange'
       BaseRegionName: !Ref BaseRegionName
 
-  StateMachineCustomResourceLambda:
+  VpcAttachmentCustomResourceLambda:
     Type: AWS::Lambda::Function
     Properties:
-      Description: Lambda for StateMachineCustomResource
+      Description: Lambda for VpcAttachmentCustomResource
       Handler: index.handler
       Runtime: python3.6
-      Role: !GetAtt StateMachineCustomResourceLambdaRole.Arn
+      Role: !GetAtt VpcAttachmentCustomResourceLambdaRole.Arn
       Timeout: 300
       Code:
         ZipFile: !Sub | 
@@ -98,36 +98,24 @@ Resources:
             aws_client = boto3.client('events', region_name=base_region_name)
             #if create
             try:
-              if event['RequestType'] == 'Create':
-                response = aws_client.put_events(
-                    Entries=[
-                    {
-                        'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'new meraki additional region requested',
-                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns], , "WaitHandle": event['ResourceProperties']['WaitHandle']}),
-                        'EventBusName': EventBusName
-                    }
-                    ]
-                )
-                responseData = response             
-              elif event['RequestType'] == 'Delete':
-                response = aws_client.put_events(
-                    Entries=[
-                    {
-                        'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'Delete Cloud WAN resources requested',
-                        'Detail': json.dumps({}),
-                        'EventBusName': EventBusName
-                    }
-                    ]
-                ) 
+              response = aws_client.put_events(
+                  Entries=[
+                  {
+                      'Source': 'com.aws.merakicloudwanquickstart',
+                      'DetailType': 'new meraki additional region requested',
+                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range],  "VpcArn": vpc_arn, "SubnetArns": [subnet_arns], , "WaitHandle": event['ResourceProperties']['WaitHandle']}),
+                      'EventBusName': EventBusName
+                  }
+                  ]
+              )
+              responseData = response             
             except Exception as e:
               print(e)
               status = cfnresponse.FAILED
             finally:
               cfnresponse.send(event, context, status, responseData)
   
-  StateMachineCustomResourceLambdaRole:
+  VpcAttachmentCustomResourceLambdaRole:
       Type: AWS::IAM::Role
       Properties:
         AssumeRolePolicyDocument:

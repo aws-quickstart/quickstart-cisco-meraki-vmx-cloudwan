@@ -392,7 +392,7 @@ Resources:
                 }
 
                 policy['segment-actions'].append(segment_action)
-                return policy
+            return policy
                         
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
@@ -667,7 +667,8 @@ Resources:
             print('Received event: %s' % json.dumps(event))
             print(event['WaitHandle'])
             try:
-              requests_data=json.dumps(dict(Status='SUCCESS',Reason='Step Function Succeeded',UniqueId='12345',Data=event)).encode('utf-8')
+              #change Status and event data to be able to handle errors
+              requests_data=json.dumps(dict(Status='SUCCESS',Reason='Step Function Succeeded',UniqueId='12345',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''}) 
               print (response)
             except Exception as e:
@@ -1068,14 +1069,14 @@ Resources:
     Type: AWS::CloudFormation::WaitConditionHandle
 ##
 ## Custom Resource for Events
-  StateMachineCustomResource:
+  CreateNetworkCustomResource:
     Type: Custom::CloudWanLambda
     DependsOn: 
     - CreateStateMachine
     - UpdateStateMachine
     - CreateNetworkNewRegion
     Properties:
-      ServiceToken: !GetAtt StateMachineCustomResourceLambda.Arn
+      ServiceToken: !GetAtt CreateNetworkCustomResourceLambda.Arn
       WaitHandle: !Ref StateMachineWaitHandle
       EventBusName: !Ref 'MerakiEventBusName'
       Az1SubnetArn: !Sub
@@ -1092,16 +1093,16 @@ Resources:
       ASN_Range: !Ref 'AmazonASNRange'
       #add !Ref globalnetworkname
 
-  StateMachineCustomResourceLambda:
+  CreateNetworkCustomResourceLambda:
     Type: AWS::Lambda::Function
     DependsOn: 
     - CreateStateMachine
     - CreateNetworkEventRule
     Properties:
-      Description: Lambda for StateMachineCustomResource
+      Description: Lambda for CreateNetworkCustomResource
       Handler: index.handler
       Runtime: python3.6
-      Role: !GetAtt StateMachineCustomResourceLambdaRole.Arn
+      Role: !GetAtt CreateNetworkCustomResourceLambdaRole.Arn
       Timeout: 300
       Code:
         ZipFile: !Sub | 
@@ -1135,7 +1136,7 @@ Resources:
                   {
                       'Source': 'com.aws.merakicloudwanquickstart',
                       'DetailType': 'new meraki global network requested',
-                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "destination_cidr_blocks": [], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns], "WaitHandle": event['ResourceProperties']['WaitHandle']}),
+                      'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns], "WaitHandle": event['ResourceProperties']['WaitHandle']}),
                       'EventBusName': EventBusName
                   }
                   ]
@@ -1162,7 +1163,7 @@ Resources:
             finally:
               cfnresponse.send(event, context, status, responseData)
   
-  StateMachineCustomResourceLambdaRole:
+  CreateNetworkCustomResourceLambdaRole:
       Type: AWS::IAM::Role
       Properties:
         AssumeRolePolicyDocument:
