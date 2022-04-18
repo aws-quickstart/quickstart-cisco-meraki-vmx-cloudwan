@@ -102,6 +102,10 @@ Resources:
                         {
                             'Key': 'Name',
                             'Value': network_name 
+                        },
+                        {
+                            'Key': 'quickstart-control-DO-NOT-MODIFY',
+                            'Value': 'Meraki CloudWAN Quick Start'                            
                         }
                     ]
                 )
