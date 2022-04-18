@@ -383,7 +383,7 @@ Resources:
                             policy['segment-actions']['segment'] = 'sdwan'
                             policy['segment-actions']['destination-cidr-blocks'] = event['destination_cidr_blocks']
                             policy['segment-actions']['destinations'] = event['VpcAttachmentId']
-                            policy['segment-actions']['description'] = 'create route for branch traffic to go out via SD-WAN VPC Attachment with ID ' + event['VpcAttachmentId'] ' in region ' + event['regions'] 
+                            policy['segment-actions']['description'] = 'create route for branch traffic to go out via SD-WAN VPC Attachment with ID ' + event['VpcAttachmentId'] + ' in region ' + event['regions'] 
 
             if 'Destinations' in event.keys():
                 # Create new create-route segment action with destination set to attachment and an initial destination-cidr-block
