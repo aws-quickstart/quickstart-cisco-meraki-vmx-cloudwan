@@ -602,8 +602,7 @@ Resources:
   GetVpcAttachmentFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri:
-         Handler: index.lambda_handler    
+      Handler: index.lambda_handler    
       Runtime: python3.8
       InlineCode: |
         import sys
@@ -674,7 +673,7 @@ Resources:
             except Exception as e:
               print (e)
       Handler: index.handler
-      Runtime: python3.6
+      Runtime: python3.8
       Role: !GetAtt CallbackRole.Arn
       Timeout: 300
 
@@ -697,15 +696,16 @@ Resources:
 ## State Machines
   CreateStateMachine:
     Type: AWS::Serverless::StateMachine
-    DependsOn: 
-    - CallbackLambda
-    - CreateGlobalNetworkFunction
-    - DescribeGlobalNetworksFunction
-    - CreateCoreNetworkFunction
-    - DescribeCoreNetworksFunction
-    - UpdateNetworkPolicyFunction
-    - ExecuteCoreNetworkChangeSetFunction
-    - GetNetworkPolicyFunction
+    #DependsOn: 
+    # Implicit DependsOn with !GetAtt <function>
+    #- CallbackLambda
+    #- CreateGlobalNetworkFunction
+    #- DescribeGlobalNetworksFunction
+    #- CreateCoreNetworkFunction
+    #- DescribeCoreNetworksFunction
+    #- UpdateNetworkPolicyFunction
+    #- ExecuteCoreNetworkChangeSetFunction
+    #- GetNetworkPolicyFunction
     Properties:
       Definition:
         Comment: State machine to create meraki cloudwan global network
@@ -894,10 +894,11 @@ Resources:
 
   CreateNetworkNewRegion:
     Type: AWS::Serverless::StateMachine
-    DependsOn:
-    - CallbackLambda
-    - CreateVpcAttachmentFunction
-    - GetVpcAttachmentFunction
+    #DependsOn:
+    # Implicit DependsOn with !GetAtt <function>
+    #- CallbackLambda
+    #- CreateVpcAttachmentFunction
+    #- GetVpcAttachmentFunction
     Properties:
       Definition:
           Comment: State machine to update meraki global cloudwan network with additional region
@@ -963,10 +964,11 @@ Resources:
 
   UpdateStateMachine:
     Type: AWS::Serverless::StateMachine
-    DependsOn:
-    - UpdateNetworkPolicyFunction
-    - ExecuteCoreNetworkChangeSetFunction
-    - GetNetworkPolicyFunction
+    #DependsOn:
+    # Implicit DependsOn with !GetAtt <function>
+    #- UpdateNetworkPolicyFunction
+    #- ExecuteCoreNetworkChangeSetFunction
+    #- GetNetworkPolicyFunction
     Properties:
       Definition:
         Comment: State machine to update meraki cloudwan global network
@@ -1101,7 +1103,7 @@ Resources:
     Properties:
       Description: Lambda for CreateNetworkCustomResource
       Handler: index.handler
-      Runtime: python3.6
+      Runtime: python3.8
       Role: !GetAtt CreateNetworkCustomResourceLambdaRole.Arn
       Timeout: 300
       Code:
@@ -1149,7 +1151,7 @@ Resources:
                     Entries=[
                     {
                         'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'delete cloudwan resources requested',
+                        'DetailType': 'Delete Cloud WAN resources requested',
                         'Detail': json.dumps({"WaitHandle": event['ResourceProperties']['WaitHandle']}),
                         'EventBusName': EventBusName
                     }

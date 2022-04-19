@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  This stack is creating creates a step function workflow for meraki cloudWAN.(qs-1srtkbc3l)
+  This stack is used to create the EventBus as well as all the components needed to delete Cloud WAN resources.  This stack is set to remain after deletion of the parent stack so that the long running delete state machine can complete running.  This stack must manually be deleted after no Cloud WN resources remain.
 
 
 Globals:
@@ -83,12 +83,13 @@ Resources:
   CloudWanDeleteStepFunction:
     Type: AWS::Serverless::StateMachine
     DependsOn: 
-    - DeleteAttachmentsDSMFunction
-    - DeleteCoreDSMFunction
-    - DeleteGlobalDSMFunction
-    - DescribeNetworkDSMFunction
-    - GetAttachmentStatusDSMFunction
-    - GetCoreStatusDSMFunction
+    # implicit DependsON with !GetAtt <function>
+    #- DeleteAttachmentsDSMFunction
+    #- DeleteCoreDSMFunction
+    #- DeleteGlobalDSMFunction
+    #- DescribeNetworkDSMFunction
+    #- GetAttachmentStatusDSMFunction
+    #- GetCoreStatusDSMFunction
     - MerakiEventBus
     Properties:
       Definition:
