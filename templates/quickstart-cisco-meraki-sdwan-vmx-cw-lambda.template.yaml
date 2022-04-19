@@ -158,7 +158,7 @@ Resources:
   PollingLambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: lambda_function.main
+      Handler: meraki_polling_lambda.main
       Timeout: 60
       Role: !GetAtt 'LambdaBasicExecutionRole.Arn'
       Runtime: python3.7

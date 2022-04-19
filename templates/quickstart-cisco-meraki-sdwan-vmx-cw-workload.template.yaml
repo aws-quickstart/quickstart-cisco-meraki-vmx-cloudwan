@@ -391,7 +391,7 @@ Outputs:
       Fn::GetAtt:
       - MerakiLambdaStack
       - Outputs.CorenetworkID
-  MerakiEventBusARN:
+  MerakiEventBusName:
     Description: The Meraki Event Bus ARN
     Value:
       Fn::GetAtt:
