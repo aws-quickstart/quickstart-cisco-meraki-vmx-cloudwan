@@ -1177,7 +1177,7 @@ Resources:
                 responseData = response
                  
               elif event['RequestType'] == 'Delete':
-                response = ec2.put_events(
+                response = aws_client.put_events(
                     Entries=[
                     {
                         'Source': 'com.aws.merakicloudwanquickstart',
