@@ -546,6 +546,8 @@ Resources:
         import sys
         from pip._internal import main
         main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        main(['install', '-I', '-q', 'requests', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')  
         sys.path.insert(0,'/tmp/') 
         import boto3
         import botocore
@@ -553,8 +555,8 @@ Resources:
         import uuid
         import threading
         import json
-        from botocore.vendored import requests
-        
+        import requests
+
 
         client = boto3.client('networkmanager')
 
@@ -572,11 +574,33 @@ Resources:
             timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
             timer.start()
             print('Received event: %s' % json.dumps(event))
-
+            network={}
             try: 
+                response = client.describe_global_networks()
+                for gn in response['GlobalNetworks']:
+                    for tag in gn['Tags']:
+                        if tag['Key'] == 'quickstart-control-DO-NOT-MODIFY' and tag['Value'] == 'Meraki CloudWAN Quick Start':
+                            print('Global NetworkID: ' + gn['GlobalNetworkId'])
+                            print('tag: '+ tag['Key'], tag['Value'])
+                            network['GlobalNetworkId'] = gn['GlobalNetworkId']
+                
+                
+                #get the proper core network associated with the GlobalNetworkID
+                response = client.list_core_networks()
+                for core in response['CoreNetworks']:
+                    #is try/except the proper way to do this?
+                    #not all items returned will have a global network, so it will throw an error without try/except
+                    try: 
+                        if core['GlobalNetworkId'] == network['GlobalNetworkId']:
+                            #print(core['CoreNetworkId'])
+                            network['CoreNetworkId'] = core['CoreNetworkId']
+                    except:
+                        #print('global network not found')
+                        pass
+                    
                 logger.info('Creating sdwan vpc attachment')
                 response = client.create_vpc_attachment(
-                    CoreNetworkId=event['CoreNetworkId'],
+                    CoreNetworkId=network['CoreNetworkId'],
                     VpcArn=event['VpcArn'],
                     SubnetArns=event['SubnetArns'],
                     Tags=[
@@ -595,6 +619,7 @@ Resources:
               print (response)
               timer.cancel()
             return VpcAttachmentId
+
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
