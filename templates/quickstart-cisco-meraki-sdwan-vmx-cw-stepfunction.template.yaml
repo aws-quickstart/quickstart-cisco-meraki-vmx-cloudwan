@@ -656,11 +656,16 @@ Resources:
       Description: Sends callback to CloudFormation to continue after Delete Step FUnction
       Code:
         ZipFile: !Sub |
-          import boto3
           import json
           import threading
-          
-          from botocore.vendored import requests
+          import sys
+          from pip._internal import main
+          main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+          sys.path.insert(0,'/tmp/')
+          main(['install', '-I', '-q', 'requests', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+          sys.path.insert(0,'/tmp/')
+          import requests
+          import boto3
 
           def handler(event, context):
             print('Received event: %s' % json.dumps(event))
