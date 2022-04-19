@@ -210,7 +210,6 @@ Resources:
       ScheduleExpression: !Ref LambdaRate
       State: ENABLED
       Targets:
-        #- Arn: !Sub ${vMXTransitGatewayRTLambda.Arn}
         - Arn: !Sub ${PollingLambdaFunction.Arn}
           Id: LambdaSchedule
     DependsOn:

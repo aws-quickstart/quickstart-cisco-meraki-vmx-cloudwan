@@ -113,7 +113,7 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -165,7 +165,7 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -228,7 +228,7 @@ Resources:
             
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -279,7 +279,7 @@ Resources:
               )
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -419,7 +419,7 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -473,7 +473,7 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -527,7 +527,7 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -590,7 +590,7 @@ Resources:
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
@@ -642,7 +642,7 @@ Resources:
               )
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
-              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=event)).encode('utf-8')
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()

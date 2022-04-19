@@ -93,7 +93,7 @@ Resources:
             az2_subnet_arns = event['ResourceProperties']['Az2SubnetArn']
             subnet_arns = [az1_subnet_arns, az2_subnet_arns]
             global_network_name = event['ResourceProperties']['GlobalNetworkName']
-            base_region_name = event[ResourceProperties']['BaseRegionName']
+            base_region_name = event['ResourceProperties']['BaseRegionName']
 
             aws_client = boto3.client('events', region_name=base_region_name)
             #if create

@@ -328,9 +328,6 @@ Outputs:
       Fn::GetAtt:
       - WorkloadStack
       - Outputs.CreateNetworkStateMachineAdditionalRegion
-  BaseRegion:
-    Description: Base Region value
-    Value: !Ref "AWS::Region"
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Value: !Ref MerakiEventBusName
