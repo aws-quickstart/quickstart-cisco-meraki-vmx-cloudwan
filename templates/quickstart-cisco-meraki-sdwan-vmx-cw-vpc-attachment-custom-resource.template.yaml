@@ -104,7 +104,7 @@ Resources:
                     {
                         'Source': 'com.aws.merakicloudwanquickstart',
                         'DetailType': 'new meraki additional region requested',
-                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range],  "VpcArn": vpc_arn, "SubnetArns": [subnet_arns], "WaitHandle": event['ResourceProperties']['WaitHandle']}),
+                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range],  "VpcArn": vpc_arn, "SubnetArns": subnet_arns, "WaitHandle": event['ResourceProperties']['WaitHandle']}),
                         'EventBusName': EventBusName
                     }
                     ]
