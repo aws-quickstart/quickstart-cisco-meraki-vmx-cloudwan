@@ -5,7 +5,7 @@ general:
 project:
   name: quickstart-cisco-meraki-sd-wan-cw
   regions:
-  - us-east-1
+  - us-west-1
   s3_regional_buckets: true
   shorten_stack_name: True
 
@@ -13,7 +13,7 @@ tests:
   default:
     template: ./templates/quickstart-cisco-meraki-sdwan-vmx-cw-entrypoint.template.yaml
     regions:
-    - us-east-1
+    - us-west-1
     parameters:
       AvailabilityZones: "$[taskcat_getaz_2]"
       EmailAddress: "example@test.com"

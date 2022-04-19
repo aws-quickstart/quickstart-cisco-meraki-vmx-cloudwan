@@ -391,12 +391,6 @@ Outputs:
       Fn::GetAtt:
       - MerakiLambdaStack
       - Outputs.CorenetworkID
-  MerakiEventBusName:
-    Description: The Meraki Event Bus ARN
-    Value:
-      Fn::GetAtt:
-      - StepFunctionStack
-      - Outputs.MerakiEventBusArn
   CreateNetworkStateMachineAdditionalRegion:
     Description: The create network step function arn for additional region 
     Value:
