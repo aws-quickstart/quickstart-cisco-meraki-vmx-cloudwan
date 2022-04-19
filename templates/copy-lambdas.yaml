@@ -23,7 +23,7 @@ Resources:
       DestBucket:
         Ref: LambdaZipsBucket
       Objects:
-      - functions/packages/lambda.zip
+      - functions/packages/meraki_polling_lambda.zip
       SourceBucket:
         Ref: QSS3BucketName
       Prefix:
