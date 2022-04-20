@@ -367,6 +367,8 @@ Resources:
             Ref: MerakiEventBusName
           BaseRegionName:
             Ref: AWS::Region
+          GlobalNetworkName:
+            !Sub ['${GlobalNetworkName}-${id}', {id: !Select [2, !Split ['/', !Ref AWS::StackId]]}]
 
 
 Outputs:

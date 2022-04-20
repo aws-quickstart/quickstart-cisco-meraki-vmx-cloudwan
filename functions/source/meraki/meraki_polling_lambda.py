@@ -186,14 +186,18 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
     network_name = global_network_name
     region = os.environ['AWS_REGION']
     input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
+    logger.info('input_data')
     aws_events_client = boto3.client('events', region_name=base_region_name)
     aws_nm_client = boto3.client('networkmanager')
+    network = {}
+    print('Network Name:')
+    print(network_name)
+    print(event_bus_name)
     try: 
-        network = {}
         response = aws_nm_client.describe_global_networks()
         for gn in response['GlobalNetworks']:
             for tag in gn['Tags']:
-                if tag['Key'] == 'name' and tag['Value'] == event['network_name']:
+                if tag['Key'] == 'Name' and tag['Value'] == network_name:
                     print('Global NetworkID: ' + gn['GlobalNetworkId'])
                     print('tag: '+ tag['Key'], tag['Value'])
                     network['GlobalNetworkId'] = gn['GlobalNetworkId']
@@ -209,26 +213,33 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
                     #print(core['CoreNetworkId'])
                     network['CoreNetworkId'] = core['CoreNetworkId']
             except:
-                #print('global network not found')
+                print('global network not found')
                 pass
-    attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region, CoreNetworkId=network['CoreNetworkId'])
-    for attachment in attachments.items():
-        if attachment[0] == 'Attachments':
-            if attachment[1][0]['Tags'][0]['Key'] == 'name':
-                if attachment[1][0]['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
-                    vpc_attachment_id = attachment[1][0]['AttachmentId']
-                    core_network_id = attachment[1][0]['CoreNetworkId']
-    response = aws_events_client.put_events(
-        Entries=[
-        {
-            'Source': 'com.aws.merakicloudwanquickstart',
-            'DetailType': 'update global network requested',
-            'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [vpn_routes], "VpcAttachmentID": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
-            'EventBusName': 'MerakiEventBus'
-        }
-        ]
-    )
-    return response
+        print(network['CoreNetworkId'])
+        attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region, CoreNetworkId=network['CoreNetworkId'])
+        for attachment in attachments.items():
+            if attachment[0] == 'Attachments':
+                if attachment[1][0]['Tags'][0]['Key'] == 'Name':
+                    if attachment[1][0]['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
+                        vpc_attachment_id = attachment[1][0]['AttachmentId']
+                        core_network_id = attachment[1][0]['CoreNetworkId']
+        response = aws_events_client.put_events(
+            Entries=[
+            {
+                'Source': 'com.aws.merakicloudwanquickstart',
+                'DetailType': 'update global network requested',
+                'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": vpn_routes, "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
+                'EventBusName': event_bus_name
+            }
+            ]
+        )
+        logger.info(response)
+        return response
+    except Exception as e:
+                print(e)
+                #requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='DeleteStateMachine',Data=event['ResourceProperties'])).encode('utf-8')
+                #response = requests.put(event['ResourceProperties']['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+                #print (response)
 
 def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_arn, rt_id, asn_range, global_network_name, event_bus_name, base_region_name):
     org_id = org_id
@@ -275,6 +286,7 @@ def update_rt(org_id, vmx1_tag, vmx2_tag, vpc_arn, az1_subnet_arn, az2_subnet_ar
     else:
         logger.info ('vMX1 and vMX2 are BOTH offline')
         #TODO: Cloudwatch enhancement to generate alerts when both vMXs are offline
+    logger.info('Running Update Network Event') 
     update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, global_network_name, event_bus_name, base_region_name)
 def timeout(event, context):
     logging.error('Execution is about to time out, sending failure response to CloudFormation')

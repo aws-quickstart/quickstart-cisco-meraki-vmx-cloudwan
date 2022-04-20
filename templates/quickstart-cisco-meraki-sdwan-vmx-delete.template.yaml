@@ -169,11 +169,11 @@ Resources:
               IntervalSeconds: 2
               MaxAttempts: 6
               BackoffRate: 2
-            Next: Wait 5 Minutes
+            Next: Wait 1 Minute
             ResultPath: "$.coreDeleteExecuted"
-          Wait 5 Minutes:
+          Wait 1 Minute:
             Type: Wait
-            Seconds: 300
+            Seconds: 60
             Next: Get Core Network Status
           Get Core Network Status:
             Type: Task
@@ -197,7 +197,7 @@ Resources:
             - Variable: "$.coreStatus.Payload"
               StringEquals: DELETED
               Next: Delete Global Network
-            Default: Wait 5 Minutes
+            Default: Wait 1 Minute
           Delete Global Network:
             Type: Task
             Resource: arn:aws:states:::lambda:invoke
@@ -378,7 +378,7 @@ Resources:
                 response = client.describe_global_networks()
                 for gn in response['GlobalNetworks']:
                     for tag in gn['Tags']:
-                        if tag['Key'] == 'quickstart-control-DO-NOT-MODIFY' and tag['Value'] == 'Meraki CloudWAN Quick Start':
+                        if tag['Key'] == 'name' and tag['Value'] == event[network_name]:
                             print('Global NetworkID: ' + gn['GlobalNetworkId'])
                             print('tag: '+ tag['Key'], tag['Value'])
                             network['GlobalNetworkId'] = gn['GlobalNetworkId']

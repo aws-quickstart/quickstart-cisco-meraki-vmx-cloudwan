@@ -576,7 +576,7 @@ Resources:
                 response = client.describe_global_networks()
                 for gn in response['GlobalNetworks']:
                     for tag in gn['Tags']:
-                        if tag['Key'] == 'name' and tag['Value'] == event['network_name']:
+                        if tag['Key'] == 'Name' and tag['Value'] == event['network_name']:
                             print('Global NetworkID: ' + gn['GlobalNetworkId'])
                             print('tag: '+ tag['Key'], tag['Value'])
                             network['GlobalNetworkId'] = gn['GlobalNetworkId']
@@ -602,7 +602,7 @@ Resources:
                     SubnetArns=event['SubnetArns'],
                     Tags=[
                         {
-                            'Key': 'name',
+                            'Key': 'Name',
                             'Value': 'Meraki-SDWAN-VPC'
                         },
                     ],
