@@ -608,6 +608,7 @@ Resources:
                     ],
                 )
                 VpcAttachmentId = response['VpcAttachment']['Attachment']['AttachmentId']
+                return VpcAttachmentId
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
@@ -615,7 +616,7 @@ Resources:
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
-            return VpcAttachmentId
+            
 
       Policies:
       - AWSNetworkManagerFullAccess
