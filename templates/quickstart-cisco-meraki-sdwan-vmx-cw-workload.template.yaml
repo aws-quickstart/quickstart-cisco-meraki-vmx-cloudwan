@@ -286,7 +286,7 @@ Resources:
           QSS3BucketRegion:
             Ref: QSS3BucketRegion
           GlobalNetworkName:
-            Ref: GlobalNetworkName
+            !Sub ['${GlobalNetworkName}-${id}', {id: !Select [2, !Split ['/', !Ref AWS::StackId]]}]
           MerakiEventBusName:
             Ref: MerakiEventBusName
           AvailabilityZone1SubnetID:
@@ -321,7 +321,7 @@ Resources:
           MerakiEventBusName:
             Ref: MerakiEventBusName
           GlobalNetworkName:
-            Ref: GlobalNetworkName
+            !Sub ['${GlobalNetworkName}-${id}', {id: !Select [2, !Split ['/', !Ref AWS::StackId]]}]
           BaseRegionName:
             Ref: AWS::Region
           
@@ -403,7 +403,7 @@ Outputs:
     Value: !Ref MerakiEventBusName
   GlobalNetworkName:
     Description: The Meraki CloudWAN Global Network Name
-    Value: !Ref GlobalNetworkName
+    Value: !Sub ['${GlobalNetworkName}-${id}', {id: !Select [2, !Split ['/', !Ref AWS::StackId]]}]
   AmazonASNRange:
     Description: The Meraki cloudWAN ASN Range Name
     Value: !Ref AmazonASNRange

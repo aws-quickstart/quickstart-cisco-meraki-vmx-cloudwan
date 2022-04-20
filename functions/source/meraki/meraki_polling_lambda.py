@@ -188,10 +188,33 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
     input_data = json.dumps({"network_name": network_name, "regions": [region], "asn-range": [asn_range], "destination_cidr_blocks": [vpn_routes], "VpcArn": vpc_arn, "SubnetArns": [subnet_arns]}),
     aws_events_client = boto3.client('events', region_name=base_region_name)
     aws_nm_client = boto3.client('networkmanager')
-    attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region)
+    try: 
+        network = {}
+        response = aws_nm_client.describe_global_networks()
+        for gn in response['GlobalNetworks']:
+            for tag in gn['Tags']:
+                if tag['Key'] == 'name' and tag['Value'] == event['network_name']:
+                    print('Global NetworkID: ' + gn['GlobalNetworkId'])
+                    print('tag: '+ tag['Key'], tag['Value'])
+                    network['GlobalNetworkId'] = gn['GlobalNetworkId']
+        
+        
+        #get the proper core network associated with the GlobalNetworkID
+        response = aws_nm_client.list_core_networks()
+        for core in response['CoreNetworks']:
+            #is try/except the proper way to do this?
+            #not all items returned will have a global network, so it will throw an error without try/except
+            try: 
+                if core['GlobalNetworkId'] == network['GlobalNetworkId']:
+                    #print(core['CoreNetworkId'])
+                    network['CoreNetworkId'] = core['CoreNetworkId']
+            except:
+                #print('global network not found')
+                pass
+    attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region, CoreNetworkId=network['CoreNetworkId'])
     for attachment in attachments.items():
         if attachment[0] == 'Attachments':
-            if attachment[1][0]['Tags'][0]['Key'] == 'Name':
+            if attachment[1][0]['Tags'][0]['Key'] == 'name':
                 if attachment[1][0]['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
                     vpc_attachment_id = attachment[1][0]['AttachmentId']
                     core_network_id = attachment[1][0]['CoreNetworkId']

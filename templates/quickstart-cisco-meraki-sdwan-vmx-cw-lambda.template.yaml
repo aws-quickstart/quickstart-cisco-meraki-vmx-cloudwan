@@ -154,6 +154,13 @@ Resources:
                 Action:
                   - "events:*"
                 Resource: !Sub arn:${AWS::Partition}:events:*:*:*
+              - Effect: Allow
+                Action:
+                  - "networkmanager:Describe*"
+                  - "networkmanager:Get*"
+                  - "networkmanager:List*"
+                Resource: "*"
+              
 
   PollingLambdaFunction:
     Type: AWS::Lambda::Function

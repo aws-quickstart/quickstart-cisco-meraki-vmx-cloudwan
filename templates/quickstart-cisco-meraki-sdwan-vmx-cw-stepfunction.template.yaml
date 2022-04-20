@@ -68,7 +68,6 @@ Resources:
         import boto3
         import botocore
         import logging
-        import uuid
         import threading
         import json
         from botocore.vendored import requests
@@ -93,9 +92,7 @@ Resources:
 
             try: 
                 logger.info('Creatng a global network for Meraki cloudwan')
-                id = uuid.uuid1()
-                network_name = event['network_name'] + "-" + str(id)[:8]
-                #network_name = default_network_name + "-" + str(id)[:8]
+                network_name = event['network_name']
                 global_network = client.create_global_network(
                     Description='meraki global network',
                     Tags=[
@@ -579,7 +576,7 @@ Resources:
                 response = client.describe_global_networks()
                 for gn in response['GlobalNetworks']:
                     for tag in gn['Tags']:
-                        if tag['Key'] == 'quickstart-control-DO-NOT-MODIFY' and tag['Value'] == 'Meraki CloudWAN Quick Start':
+                        if tag['Key'] == 'name' and tag['Value'] == event['network_name']:
                             print('Global NetworkID: ' + gn['GlobalNetworkId'])
                             print('tag: '+ tag['Key'], tag['Value'])
                             network['GlobalNetworkId'] = gn['GlobalNetworkId']
@@ -1182,7 +1179,7 @@ Resources:
                     {
                         'Source': 'com.aws.merakicloudwanquickstart',
                         'DetailType': 'Delete Cloud WAN resources requested',
-                        'Detail': json.dumps({"WaitHandle": event['ResourceProperties']['WaitHandle']}),
+                        'Detail': json.dumps({"network_name": global_network_name, "WaitHandle": event['ResourceProperties']['WaitHandle']}),
                         'EventBusName': EventBusName
                     }
                     ]
