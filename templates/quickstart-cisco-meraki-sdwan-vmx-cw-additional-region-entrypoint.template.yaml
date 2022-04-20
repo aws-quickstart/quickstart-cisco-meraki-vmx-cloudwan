@@ -82,8 +82,8 @@ Metadata:
         default: "Meraki CloudWAN EventBus Name"
       GlobalNetworkName:
         default: "Meraki CloudWAN Global network name"
-      AmazonASNRange:
-        default: CloudWAN ASN Range
+      # AmazonASNRange:
+      #   default: CloudWAN ASN Range
 Parameters:
   MerakiOrgID:
     Description: Meraki organization ID.
@@ -199,14 +199,14 @@ Parameters:
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Type: String
-    Value: !Ref MerakiEventBusName
+    #Value: !Ref MerakiEventBusName
   GlobalNetworkName:
     Description: The Meraki Event Bus Name
     Type: String
-    Value: !Ref GlobalNetworkName
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Type: String
+    #Value: !Ref GlobalNetworkName
+  # AmazonASNRange:
+  #   Description: Autonomous System Number (ASN) for CloudWAN Network. 
+  #   Type: String
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -283,7 +283,7 @@ Resources:
           Ref: QSS3BucketRegion 
         QSS3KeyPrefix:
           Ref: QSS3KeyPrefix
-        BaseRegionStackName: !Ref BaseRegionStackName
+        #BaseRegionStackName: !Ref BaseRegionStackName
         
 Outputs:
   VPCID:
