@@ -47,6 +47,7 @@ tests:
     regions:
     - us-west-1
     parameters:
+      BaseRegionName: "us-east-1"
       AvailabilityZones: "$[taskcat_getaz_2]"
       EmailAddress: "example@test.com"
       KeyPairName: "your-key-pair"

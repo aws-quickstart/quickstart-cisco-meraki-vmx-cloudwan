@@ -204,6 +204,11 @@ Parameters:
     Description: Autonomous System Number (ASN) for CloudWAN Network. 
     Default: "65000-65500"
     Type: String
+  BaseRegionName: 
+    Description: Where the Base Region template was deployed.  Needed for EventBridge API 
+    Default: "us-east-1"
+    Type: String   
+
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -281,6 +286,8 @@ Resources:
           #BaseRegionName: 
           #  Fn::ImportValue:
           #    !Sub "${BaseRegionStackName}-BaseRegion"
+          BaseRegionName:
+            Ref: BaseRegionName
           MerakiEventBusName:
             Ref: MerakiEventBusName
           GlobalNetworkName:
