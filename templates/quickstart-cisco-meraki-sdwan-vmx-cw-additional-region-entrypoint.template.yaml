@@ -200,13 +200,16 @@ Parameters:
     Description: The Meraki Event Bus Name
     Type: String
     #Value: !Ref MerakiEventBusName
+    Default: MerakiCloudWANEventBus
   GlobalNetworkName:
     Description: The Meraki Event Bus Name
     Type: String
     #Value: !Ref GlobalNetworkName
-  # AmazonASNRange:
-  #   Description: Autonomous System Number (ASN) for CloudWAN Network. 
-  #   Type: String
+    Default: meraki_gn
+  AmazonASNRange:
+    Description: Autonomous System Number (ASN) for CloudWAN Network. 
+    Default: "65000-65500"
+    Type: String
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -237,7 +240,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cw-additional-region-workload.template.yaml
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-additional-region-workload.template.yaml
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:

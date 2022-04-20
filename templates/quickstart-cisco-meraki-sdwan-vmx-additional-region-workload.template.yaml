@@ -195,12 +195,15 @@ Parameters:
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Type: String
+    Default: MerakiCloudWANEventBus
   GlobalNetworkName:
     Description: The Meraki Event Bus Name
     Type: String
-  # AmazonASNRange:
-  #   Description: Autonomous System Number (ASN) for CloudWAN Network. 
-  #   Type: String
+    Default: meraki_gn
+  AmazonASNRange:
+    Description: Autonomous System Number (ASN) for CloudWAN Network. 
+    Default: "65000-65500"
+    Type: String
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -271,8 +274,8 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          # AmazonASNRange:
-          #   Ref: AmazonASNRange
+          AmazonASNRange:
+            Ref: AmazonASNRange
           #MerakiEventBusArn: 
           #  Ref: MerakiEventBusArn
           #BaseRegionName: 
