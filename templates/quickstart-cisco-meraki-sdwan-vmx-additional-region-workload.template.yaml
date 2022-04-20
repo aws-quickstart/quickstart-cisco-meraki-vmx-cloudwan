@@ -30,7 +30,7 @@ Metadata:
 #          - MerakiEventBusArn
           - MerakiEventBusName
           - GlobalNetworkName
-          # - AmazonASNRange
+          - BaseRegionName
       - Label:
           default: EC2 configuration
         Parameters:
@@ -87,8 +87,8 @@ Metadata:
         default: "Meraki CloudWAN EventBus Name"
       GlobalNetworkName:
         default: "Meraki CloudWAN Global network name"
-      # AmazonASNRange:
-      #   default: CloudWAN ASN Range
+      BaseRegionName:
+        default: "Enter the BaseRegionName from the Outputs of the Base Region Stack here"
 Parameters:
   MerakiOrgID:
     Description: Meraki organization ID.
@@ -195,18 +195,11 @@ Parameters:
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Type: String
-    Default: MerakiCloudWANEventBus
   GlobalNetworkName:
     Description: The Meraki Event Bus Name
     Type: String
-    Default: meraki_gn
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Default: "65000-65500"
-    Type: String
   BaseRegionName: 
     Description: Where the Base Region template was deployed.  Needed for EventBridge API 
-    Default: "us-east-1"
     Type: String   
 
 
@@ -279,20 +272,12 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          AmazonASNRange:
-            Ref: AmazonASNRange
-          #MerakiEventBusArn: 
-          #  Ref: MerakiEventBusArn
-          #BaseRegionName: 
-          #  Fn::ImportValue:
-          #    !Sub "${BaseRegionStackName}-BaseRegion"
           BaseRegionName:
             Ref: BaseRegionName
           MerakiEventBusName:
             Ref: MerakiEventBusName
           GlobalNetworkName:
             Ref: GlobalNetworkName
-          #BaseRegion: "No"
           
   MerakiLambdaStack:
     DependsOn: CustomResourceStack 
@@ -310,8 +295,6 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          # AmazonSideASN:
-          #   Ref: AmazonASNRange
           QSS3BucketName:
             Ref: QSS3BucketName
           QSS3KeyPrefix:
@@ -333,8 +316,10 @@ Resources:
             Ref: LambdaRate
           MerakiEventBusName:
             Ref: MerakiEventBusName
-          #BaseRegionName:
-          #  Ref: AWS::Region
+          BaseRegionName:
+            Ref: BaseRegionName
+          GlobalNetworkName:
+            Ref: GlobalNetworkName
           
 Outputs:
   VPCID:

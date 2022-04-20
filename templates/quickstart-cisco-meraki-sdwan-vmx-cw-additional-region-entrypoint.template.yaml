@@ -28,6 +28,7 @@ Metadata:
           - AvailabilityZone2CIDR
           - MerakiEventBusName
           - GlobalNetworkName
+          - BaseRegionName
       - Label:
           default: EC2 configuration
         Parameters:
@@ -82,8 +83,8 @@ Metadata:
         default: "Meraki CloudWAN EventBus Name"
       GlobalNetworkName:
         default: "Meraki CloudWAN Global network name"
-      # AmazonASNRange:
-      #   default: CloudWAN ASN Range
+      BaseRegionName:
+        default: "Enter the BaseRegionName from the Outputs of the Base Region Stack here"
 Parameters:
   MerakiOrgID:
     Description: Meraki organization ID.
@@ -199,22 +200,12 @@ Parameters:
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Type: String
-    #Value: !Ref MerakiEventBusName
-    Default: MerakiCloudWANEventBus
   GlobalNetworkName:
-    Description: The Meraki Event Bus Name
+    Description: The Meraki cloudWAN global network name
     Type: String
-    #Value: !Ref GlobalNetworkName
-    Default: meraki_gn
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Default: "65000-65500"
+  BaseRegionName:
+    Description: Enter the BaseRegionName from the Outputs of the Base Region Stack here
     Type: String
-  BaseRegionName: 
-    Description: Where the Base Region template was deployed.  Needed for EventBridge API 
-    Default: "us-east-1"
-    Type: String    
-  
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -245,7 +236,7 @@ Resources:
     Properties:
       TemplateURL:
         !Sub
-          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-additional-region-workload.template.yaml
+          - https://${S3Bucket}.s3.${S3Region}.${AWS::URLSuffix}/${QSS3KeyPrefix}templates/quickstart-cisco-meraki-sdwan-vmx-cw-additional-region-workload.template.yaml
           - S3Region: !If [UsingDefaultBucket, !Ref 'AWS::Region', !Ref QSS3BucketRegion]
             S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       Parameters:
@@ -291,9 +282,12 @@ Resources:
           Ref: QSS3BucketRegion 
         QSS3KeyPrefix:
           Ref: QSS3KeyPrefix
-        #BaseRegionStackName: !Ref BaseRegionStackName
+        MerakiEventBusName:
+          Ref: MerakiEventBusName
         GlobalNetworkName:
           Ref: GlobalNetworkName
+        BaseRegionName:
+          Ref: BaseRegionName
         
 Outputs:
   VPCID:

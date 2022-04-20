@@ -21,9 +21,6 @@ Parameters:
   AvailabilityZone2SubnetID:
     Description: Subnet ID to be used for the deployment of vMX-2 in Availability Zone 2
     Type: 'AWS::EC2::Subnet::Id'
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Type: String
   BaseRegionName:
     Description: Base Region Name
     Type: String
@@ -58,7 +55,6 @@ Resources:
                 - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VPC_ID}
                 - VPC_ID: !Ref 'VPCID'
       GlobalNetworkName: !Ref 'GlobalNetworkName'
-      ASN_Range: !Ref 'AmazonASNRange'
       BaseRegionName: !Ref BaseRegionName
 
   VpcAttachmentCustomResourceLambda:
@@ -87,7 +83,6 @@ Resources:
             responseData = {}
             
             EventBusName = event['ResourceProperties']['EventBusName']
-            asn_range = event['ResourceProperties']['ASN_Range']
             vpc_arn = event['ResourceProperties']['VPCArn']
             az1_subnet_arns = event['ResourceProperties']['Az1SubnetArn']
             az2_subnet_arns = event['ResourceProperties']['Az2SubnetArn']
@@ -104,7 +99,7 @@ Resources:
                     {
                         'Source': 'com.aws.merakicloudwanquickstart',
                         'DetailType': 'new meraki additional region requested',
-                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "asn-range": [asn_range],  "VpcArn": vpc_arn, "SubnetArns": subnet_arns, "WaitHandle": event['ResourceProperties']['WaitHandle']}),
+                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "VpcArn": vpc_arn, "SubnetArns": subnet_arns, "WaitHandle": event['ResourceProperties']['WaitHandle']}),
                         'EventBusName': EventBusName
                     }
                     ]

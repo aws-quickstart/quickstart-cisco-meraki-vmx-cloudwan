@@ -334,8 +334,11 @@ Outputs:
   GlobalNetworkName:
     Description: The Meraki Event Bus Name
     Value: !Ref GlobalNetworkName
+  BaseRegionName:
+    Description: The base region name for the Meraki cloudWAN Quickstart
+    Value: !Ref AWS::Region
   AmazonASNRange:
-    Description: The Meraki cloudWAN ASN Range Name
+    Description: The Meraki cloudWAN ASN Range
     Value: !Ref AmazonASNRange
   
   Postdeployment:

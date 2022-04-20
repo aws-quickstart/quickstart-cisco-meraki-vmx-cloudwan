@@ -409,6 +409,9 @@ Outputs:
   AmazonASNRange:
     Description: The Meraki cloudWAN ASN Range Name
     Value: !Ref AmazonASNRange
+  BaseRegionName:
+    Description: The base region name for the Meraki cloudWAN Quickstart
+    Value: !Ref AWS::Region
   Postdeployment:
     Description: See the deployment guide for postdeployment steps.
     Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.s
