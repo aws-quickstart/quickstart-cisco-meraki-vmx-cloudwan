@@ -30,7 +30,7 @@ Metadata:
 #          - MerakiEventBusArn
           - MerakiEventBusName
           - GlobalNetworkName
-          - AmazonASNRange
+          # - AmazonASNRange
       - Label:
           default: EC2 configuration
         Parameters:
@@ -87,8 +87,8 @@ Metadata:
         default: "Meraki CloudWAN EventBus Name"
       GlobalNetworkName:
         default: "Meraki CloudWAN Global network name"
-      AmazonASNRange:
-        default: CloudWAN ASN Range
+      # AmazonASNRange:
+      #   default: CloudWAN ASN Range
 Parameters:
   MerakiOrgID:
     Description: Meraki organization ID.
@@ -198,9 +198,9 @@ Parameters:
   GlobalNetworkName:
     Description: The Meraki Event Bus Name
     Type: String
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Type: String
+  # AmazonASNRange:
+  #   Description: Autonomous System Number (ASN) for CloudWAN Network. 
+  #   Type: String
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
@@ -271,8 +271,8 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          AmazonASNRange:
-            Ref: AmazonASNRange
+          # AmazonASNRange:
+          #   Ref: AmazonASNRange
           #MerakiEventBusArn: 
           #  Ref: MerakiEventBusArn
           #BaseRegionName: 
@@ -300,8 +300,8 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          AmazonSideASN:
-            Ref: AmazonASNRange
+          # AmazonSideASN:
+          #   Ref: AmazonASNRange
           QSS3BucketName:
             Ref: QSS3BucketName
           QSS3KeyPrefix:
@@ -342,12 +342,12 @@ Outputs:
       Fn::GetAtt:
       - VMX2Stack 
       - Outputs.vMXInstanceID
-  CorenetworkID:
-    Description: AWS Corenetwork ID.
-    Value:
-      Fn::GetAtt:
-      - MerakiLambdaStack
-      - Outputs.CorenetworkID
+  # CorenetworkID:
+  #   Description: AWS Corenetwork ID.
+  #   Value:
+  #     Fn::GetAtt:
+  #     - MerakiLambdaStack
+  #     - Outputs.CorenetworkID
   # MerakiEventBusARN:
   #   Description: The Meraki Event Bus ARN
   #   Value:
