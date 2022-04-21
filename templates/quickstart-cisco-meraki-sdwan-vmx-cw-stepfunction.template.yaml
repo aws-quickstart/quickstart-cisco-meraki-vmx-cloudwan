@@ -1221,12 +1221,12 @@ Resources:
             Type: Wait
           Create Vpc Attachment:
             Next: Wait 60 seconds for attachment creation
-            Resource: arn:aws:lambda:us-east-1:593848467775:function:tCaT-default-47890e-Workl-CreateVpcAttachmentFunct-THX0aoEwYQ29
+            Resource: !GetAtt CreateVpcAttachmentFunction.Arn
             ResultPath: "$.Destinations"
             Type: Task
           Get vpc attachment status:
             Next: VPC attachment created?
-            Resource: arn:aws:lambda:us-east-1:593848467775:function:tCaT-default-47890e-Workl-GetVpcAttachmentFunction-WcZBDHzEjthk
+            Resource: !GetAtt GetVpcAttachmentFunction.Arn
             ResultPath: "$.VpcAttachmentState"
             Type: Task
           VPC attachment created?:
@@ -1242,10 +1242,7 @@ Resources:
             Type: Wait
           CallBack Lambda:
             End: true
-            Parameters:
-              FunctionName: arn:aws:lambda:us-east-1:593848467775:function:tCaT-default-47890e-WorkloadStack-1-CallbackLambda-2qz4dSkfDmtL
-              Payload.$: "$"
-            Resource: arn:aws:states:::lambda:invoke
+            Resource: !GetAtt CallbackLambda.Arn
             ResultPath: "$.callback"
             Type: Task            
       Policies:
@@ -1258,7 +1255,17 @@ Resources:
       - LambdaInvokePolicy:
           FunctionName: !Ref DescribeCoreNetworksFunction
       - LambdaInvokePolicy:
-          FunctionName: !Ref ## add                  
+          FunctionName: !Ref GetCoreNetworkIdFromGlobal       
+      - LambdaInvokePolicy:
+          FunctionName: !Ref UpdateNetworkPolicyFunction     
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetNetworkPolicyFunction  
+      - LambdaInvokePolicy:
+          FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction  
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetEndpointStatus 
+      - LambdaInvokePolicy:
+          FunctionName: !Ref GetNetworkPolicyFunction                                                         
       Events:
         NewRegionRule:
           Type: EventBridgeRule
