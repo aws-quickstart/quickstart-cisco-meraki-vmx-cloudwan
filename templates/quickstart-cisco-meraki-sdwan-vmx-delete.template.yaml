@@ -402,9 +402,12 @@ Resources:
                 for attachment in response['Attachments']:
                     #print(attachment)
                     try: 
-                        if attachment['SegmentName'] == 'sdwan':
-                            #print(attachment['AttachmentId'])
-                            network['Attachments'].append(attachment['AttachmentId'])
+                        # if attachment['SegmentName'] == 'sdwan':
+                        #     #print(attachment['AttachmentId'])
+                        #     network['Attachments'].append(attachment['AttachmentId'])
+                        #Since CoreNetwork is unique to the Meraki Global Network...
+                        #It is safe to assume that all attachments can be deleted.
+                        network['Attachments'].append(attachment['AttachmentId'])
                     except:
                         #print('SegmentName not found')
                         pass                
