@@ -533,7 +533,143 @@ Resources:
       Policies:
       - AWSNetworkManagerFullAccess
       - AWSAccountManagementReadOnlyAccess
-  
+
+
+  GetCoreNetworkIdFromGlobal:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        main(['install', '-I', '-q', 'requests', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+        import threading
+        import json
+        import requests
+        
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            print('Event: {}'.format(event))
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            network={}
+            try:
+              response = client.describe_global_networks()
+              print('global network API response: '+ str(response))
+              for gn in response['GlobalNetworks']:
+                  for tag in gn['Tags']:
+                      if tag['Key'] == 'Name' and tag['Value'] == event['network_name']:
+                          print('Global NetworkID: ' + gn['GlobalNetworkId'])
+                          print('tag: '+ tag['Key'], tag['Value'])
+                          network['GlobalNetworkId'] = gn['GlobalNetworkId']
+              
+              
+              #get the proper core network associated with the GlobalNetworkID
+              response = client.list_core_networks()
+              print('core network API response: '+ str(response))
+              print('network var '+ str(network))
+              for core in response['CoreNetworks']:
+                  #is try/except the proper way to do this?
+                  #not all items returned will have a global network, so it will throw an error without try/except
+                  try: 
+                      if core['GlobalNetworkId'] == network['GlobalNetworkId']:
+                          #print(core['CoreNetworkId'])
+                          return core['CoreNetworkId']
+                  except:
+                      #print('global network not found')
+                      pass
+
+              #should fail if the core network is not found above
+              raise Exception('CoreNetworkId not found')
+
+            except Exception as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            
+      Policies:
+      - AWSNetworkManagerFullAccess
+
+  GetEndpointStatus:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.lambda_handler    
+      Runtime: python3.8
+      InlineCode: |
+        import sys
+        from pip._internal import main
+        main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        main(['install', '-I', '-q', 'requests', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        sys.path.insert(0,'/tmp/')
+        import boto3
+        import botocore
+        import logging
+        import threading
+        import json
+        import requests
+        
+
+        client = boto3.client('networkmanager')
+
+        # Set up our logger
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger()
+
+        def timeout(event, context):
+            logging.error('Execution is about to time out, sending failure response to CloudFormation')
+            requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='TableauServerStates',Data='failed due to timeout')).encode('utf-8')
+            response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+            sys.exit(1)
+
+        def lambda_handler(event,context):
+            print('Event: {}'.format(event))
+            timer = threading.Timer((context.get_remaining_time_in_millis() / 1000.00) - 2, timeout, args=[event, context])
+            timer.start()
+            try:
+              policy_response = client.get_core_network_policy(CoreNetworkId = event['CoreNetworkId'], Alias = 'LATEST')    
+              print(policy_response)
+              policy = json.loads(policy_response['CoreNetworkPolicy']['PolicyDocument'])
+              print(policy['core-network-configuration']['edge-locations'])
+              for i in policy['core-network-configuration']['edge-locations']:
+                  #print(i['location'])
+                  if i['location'] == event['region']:
+                      return "AVAILABLE"
+              return "WAITING"
+
+            except Exception as e:
+              logging.error('Exception: %s' % e, exc_info=True)
+              requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='GlobalNetworkStates',Data=str(event))).encode('utf-8')
+              response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
+              print (response)
+              timer.cancel()
+
+            
+      Policies:
+      - AWSNetworkManagerFullAccess
+
+
+
   CreateVpcAttachmentFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -920,6 +1056,78 @@ Resources:
               - arn:aws:states:*:*:stateMachine:*
                 
 
+  # CreateNetworkNewRegion:
+  #   Type: AWS::Serverless::StateMachine
+  #   #DependsOn:
+  #   # Implicit DependsOn with !GetAtt <function>
+  #   #- CallbackLambda
+  #   #- CreateVpcAttachmentFunction
+  #   #- GetVpcAttachmentFunction
+  #   Properties:
+  #     Definition:
+  #         Comment: State machine to update meraki global cloudwan network with additional region
+  #         StartAt: Create Vpc Attachment
+  #         States:
+  #           Create Vpc Attachment:
+  #             Type: Task
+  #             Resource: !GetAtt CreateVpcAttachmentFunction.Arn
+  #             ResultPath: $.Destinations
+  #             Next: Wait 60 seconds for attachment creation
+  #           Wait 60 seconds for attachment creation:
+  #             Type: Wait
+  #             Seconds: 60
+  #             Next: Get vpc attachment status 
+  #           Get vpc attachment status:
+  #             Type: Task
+  #             Resource: !GetAtt GetVpcAttachmentFunction.Arn
+  #             ResultPath: $.VpcAttachmentState
+  #             Next: VPC attachment created?
+  #           VPC attachment created?:
+  #             Type: Choice
+  #             Choices:
+  #             - Variable: "$.VpcAttachmentState"
+  #               StringEquals: AVAILABLE
+  #               Next: CallBack Lambda
+  #             Default: Wait 60 seconds for attachment creation
+  #           CallBack Lambda:
+  #             Type: Task
+  #             Resource: arn:aws:states:::lambda:invoke
+  #             Parameters:
+  #               Payload.$: "$"
+  #               FunctionName: !GetAtt CallbackLambda.Arn
+  #             Retry:
+  #             - ErrorEquals:
+  #               - Lambda.ServiceException
+  #               - Lambda.AWSLambdaException
+  #               - Lambda.SdkClientException
+  #               IntervalSeconds: 2
+  #               MaxAttempts: 6
+  #               BackoffRate: 2
+  #             End: true
+  #             ResultPath: "$.callback"
+  #     Policies:
+  #     - LambdaInvokePolicy:
+  #         FunctionName: !Ref CreateVpcAttachmentFunction
+  #     - LambdaInvokePolicy:
+  #         FunctionName: !Ref GetVpcAttachmentFunction
+  #     - LambdaInvokePolicy:
+  #         FunctionName: !Ref CallbackLambda      
+  #     Events:
+  #       NewRegionRule:
+  #         Type: EventBridgeRule
+  #         Properties:
+  #           EventBusName: !Ref MerakiEventBusName
+  #           InputPath: $.detail
+  #           Pattern:
+  #             source:
+  #               - com.aws.merakicloudwanquickstart
+  #             detail-type:
+  #               - new meraki additional region requested
+  #             account:
+  #               - !Ref AWS::AccountId
+
+
+
   CreateNetworkNewRegion:
     Type: AWS::Serverless::StateMachine
     #DependsOn:
@@ -929,53 +1137,128 @@ Resources:
     #- GetVpcAttachmentFunction
     Properties:
       Definition:
-          Comment: State machine to update meraki global cloudwan network with additional region
-          StartAt: Create Vpc Attachment
-          States:
-            Create Vpc Attachment:
-              Type: Task
-              Resource: !GetAtt CreateVpcAttachmentFunction.Arn
-              ResultPath: $.Destinations
-              Next: Wait 60 seconds for attachment creation
-            Wait 60 seconds for attachment creation:
-              Type: Wait
-              Seconds: 60
-              Next: Get vpc attachment status 
-            Get vpc attachment status:
-              Type: Task
-              Resource: !GetAtt GetVpcAttachmentFunction.Arn
-              ResultPath: $.VpcAttachmentState
-              Next: VPC attachment created?
-            VPC attachment created?:
-              Type: Choice
-              Choices:
-              - Variable: "$.VpcAttachmentState"
-                StringEquals: AVAILABLE
-                Next: CallBack Lambda
-              Default: Wait 60 seconds for attachment creation
-            CallBack Lambda:
-              Type: Task
-              Resource: arn:aws:states:::lambda:invoke
-              Parameters:
-                Payload.$: "$"
-                FunctionName: !GetAtt CallbackLambda.Arn
-              Retry:
-              - ErrorEquals:
-                - Lambda.ServiceException
-                - Lambda.AWSLambdaException
-                - Lambda.SdkClientException
-                IntervalSeconds: 2
-                MaxAttempts: 6
-                BackoffRate: 2
-              End: true
-              ResultPath: "$.callback"
+        Comment: State machine to update meraki global cloudwan network with additional region
+        StartAt: Get core network ID
+        States:
+          Get core network ID:
+            Type: Task
+            Resource: !Getatt GetCoreNetworkIdFromGlobal.Arn
+            ResultPath: $.CoreNetworkId
+            Next: Get core network status
+          Get core network status:
+            Type: Task
+            Resource: !GetAtt DescribeCoreNetworksFunction.Arn
+            ResultPath: $.CoreNetworkStatus
+            Next: Core network available?
+          Core network available?:
+            Type: Choice
+            Choices:
+            - Variable: "$.CoreNetworkStatus"
+              StringEquals: AVAILABLE
+              Next: Define network policy
+            Default: Wait 10 seconds for core network                  
+          Wait 10 seconds for core network:
+            Type: Wait
+            Seconds: 10
+            Next: Get core network status
+          Define network policy:
+            Type: Task
+            Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyVersionId
+            Next: Wait 10 seconds for network policy
+          Wait 10 seconds for network policy:
+            Type: Wait
+            Seconds: 10
+            Next: Get policy status
+          Get policy status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy ready to execute?
+          Network policy ready to execute?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: READY_TO_EXECUTE
+              Next: Execute network policy changeset
+            Default: Wait 10 seconds for network policy
+          Execute network policy changeset:
+            Type: Task
+            Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
+            ResultPath: $.ChangeSetResponse
+            Next: Wait 60 seconds for execute network policy changeset
+          Wait 60 seconds for execute network policy changeset:
+            Type: Wait
+            Seconds: 60
+            Next: Get network policy changeset status
+          Get network policy changeset status:
+            Type: Task
+            Resource: !GetAtt GetNetworkPolicyFunction.Arn
+            ResultPath: $.NetworkPolicyChangeSetState
+            Next: Network policy change set executed?
+          Network policy change set executed?:
+            Type: Choice
+            Choices:
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: EXECUTION_SUCCEEDED
+              Next: Get Endpoint Status
+            Default: Wait 60 seconds for execute network policy changeset
+          Get Endpoint Status:
+            Type: Task
+            Resource: !GetAtt GetEndpointStatus.Arn
+            ResultPath: $.EndpointState
+            Next: Endpoint Ready?
+          Endpoint Ready?:
+            Type: Choice
+            Choices:
+            - Variable: "$.EndpointState"
+              StringEquals: AVAILABLE
+              Next: Create Vpc Attachment
+            Default: Wait 60 seconds for Endpoint addition
+          Wait 60 seconds for Endpoint addition:
+            Next: Get Endpoint Status
+            Seconds: 60
+            Type: Wait
+          Create Vpc Attachment:
+            Next: Wait 60 seconds for attachment creation
+            Resource: arn:aws:lambda:us-east-1:593848467775:function:tCaT-default-47890e-Workl-CreateVpcAttachmentFunct-THX0aoEwYQ29
+            ResultPath: "$.Destinations"
+            Type: Task
+          Get vpc attachment status:
+            Next: VPC attachment created?
+            Resource: arn:aws:lambda:us-east-1:593848467775:function:tCaT-default-47890e-Workl-GetVpcAttachmentFunction-WcZBDHzEjthk
+            ResultPath: "$.VpcAttachmentState"
+            Type: Task
+          VPC attachment created?:
+            Choices:
+            - Next: CallBack Lambda
+              StringEquals: AVAILABLE
+              Variable: "$.VpcAttachmentState"
+            Default: Wait 60 seconds for attachment creation
+            Type: Choice
+          Wait 60 seconds for attachment creation:
+            Next: Get vpc attachment status
+            Seconds: 60
+            Type: Wait
+          CallBack Lambda:
+            End: true
+            Parameters:
+              FunctionName: arn:aws:lambda:us-east-1:593848467775:function:tCaT-default-47890e-WorkloadStack-1-CallbackLambda-2qz4dSkfDmtL
+              Payload.$: "$"
+            Resource: arn:aws:states:::lambda:invoke
+            ResultPath: "$.callback"
+            Type: Task            
       Policies:
       - LambdaInvokePolicy:
           FunctionName: !Ref CreateVpcAttachmentFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref GetVpcAttachmentFunction
       - LambdaInvokePolicy:
-          FunctionName: !Ref CallbackLambda      
+          FunctionName: !Ref CallbackLambda     
+      - LambdaInvokePolicy:
+          FunctionName: !Ref DescribeCoreNetworksFunction
+      - LambdaInvokePolicy:
+          FunctionName: !Ref ## add                  
       Events:
         NewRegionRule:
           Type: EventBridgeRule
@@ -990,6 +1273,19 @@ Resources:
               account:
                 - !Ref AWS::AccountId
 
+
+
+
+
+
+
+
+
+
+
+
+
+
   UpdateStateMachine:
     Type: AWS::Serverless::StateMachine
     #DependsOn:
@@ -1000,8 +1296,29 @@ Resources:
     Properties:
       Definition:
         Comment: State machine to update meraki cloudwan global network
-        StartAt: Update network policy
+        StartAt: Get core network ID
         States:
+          Get core network ID:
+            Type: Task
+            Resource: !Getatt GetCoreNetworkIdFromGlobal.Arn
+            ResultPath: $.CoreNetworkId
+            Next: Get core network status
+          Get core network status:
+            Type: Task
+            Resource: !GetAtt DescribeCoreNetworksFunction.Arn
+            ResultPath: $.CoreNetworkStatus
+            Next: Core network available?
+          Core network available?:
+            Type: Choice
+            Choices:
+            - Variable: "$.CoreNetworkStatus"
+              StringEquals: AVAILABLE
+              Next: Update network policy
+            Default: Wait 10 seconds for core network                  
+          Wait 10 seconds for core network:
+            Type: Wait
+            Seconds: 10
+            Next: Get core network status        
           Update network policy:
             Type: Task
             Resource: !GetAtt UpdateNetworkPolicyFunction.Arn
