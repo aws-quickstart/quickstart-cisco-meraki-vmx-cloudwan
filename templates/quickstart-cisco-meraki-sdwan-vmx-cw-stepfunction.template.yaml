@@ -1307,7 +1307,7 @@ Resources:
         States:
           Get core network ID:
             Type: Task
-            Resource: !Getatt GetCoreNetworkIdFromGlobal.Arn
+            Resource: !GetAtt GetCoreNetworkIdFromGlobal.Arn
             ResultPath: $.CoreNetworkId
             Next: Get core network status
           Get core network status:
