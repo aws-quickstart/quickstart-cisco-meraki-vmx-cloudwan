@@ -314,8 +314,8 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          AmazonASNRange:
-            Ref: AmazonASNRange
+          # AmazonASNRange:
+          #   Ref: AmazonASNRange
           #MerakiEventBusArn: 
           #  Ref: MerakiEventBusArn
           MerakiEventBusName:
@@ -343,26 +343,26 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          AmazonASNRange:
-            Ref: AmazonASNRange
-          QSS3BucketName:
-            Ref: QSS3BucketName
-          QSS3KeyPrefix:
-            Ref: QSS3KeyPrefix
-          QSS3BucketRegion:
-            Ref: QSS3BucketRegion
-          SDWANVPCRTID:
-            Ref: VPCRouteTableID
-          MerakiAPIKey:
-            Ref: MerakiAPIKey
-          MerakiOrgID:
-            Ref: MerakiOrgID
-          vMX1MerakiNetworkTag:
-            Ref: vMX1MerakiNetworkTag
-          vMX2MerakiNetworkTag:
-            Ref: vMX2MerakiNetworkTag
-          LambdaRate:
-            Ref: LambdaRate
+          # AmazonASNRange:
+          #   Ref: AmazonASNRange
+          # QSS3BucketName:
+          #   Ref: QSS3BucketName
+          # QSS3KeyPrefix:
+          #   Ref: QSS3KeyPrefix
+          # QSS3BucketRegion:
+          #   Ref: QSS3BucketRegion
+          # SDWANVPCRTID:
+          #   Ref: VPCRouteTableID
+          # MerakiAPIKey:
+          #   Ref: MerakiAPIKey
+          # MerakiOrgID:
+          #   Ref: MerakiOrgID
+          # vMX1MerakiNetworkTag:
+          #   Ref: vMX1MerakiNetworkTag
+          # vMX2MerakiNetworkTag:
+          #   Ref: vMX2MerakiNetworkTag
+          # LambdaRate:
+          #   Ref: LambdaRate
           MerakiEventBusName:
             Ref: MerakiEventBusName
           BaseRegionName:
@@ -406,9 +406,9 @@ Outputs:
   GlobalNetworkName:
     Description: The Meraki CloudWAN Global Network Name
     Value: !Sub ['${GlobalNetworkName}-${id}', {id: !Select [2, !Split ['/', !Ref AWS::StackId]]}]
-  AmazonASNRange:
-    Description: The Meraki cloudWAN ASN Range Name
-    Value: !Ref AmazonASNRange
+  # AmazonASNRange:
+  #   Description: The Meraki cloudWAN ASN Range Name
+  #   Value: !Ref AmazonASNRange
   BaseRegionName:
     Description: The base region name for the Meraki cloudWAN Quickstart
     Value: !Ref AWS::Region
