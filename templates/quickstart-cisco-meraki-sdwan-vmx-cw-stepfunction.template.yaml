@@ -294,13 +294,14 @@ Resources:
         import sys
         from pip._internal import main
         main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
+        main(['install', '-I', '-q', 'requests', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
         sys.path.insert(0,'/tmp/')
         import boto3
         import botocore
         import logging
         import json
         import threading
-        from botocore.vendored import requests
+        import requests
 
 
         client = boto3.client('networkmanager')
@@ -364,7 +365,9 @@ Resources:
 
             if 'region' in event.keys():
                 region_list = policy['core-network-configuration']['edge-locations']
-                region_list.append({'location': event['region']}) 
+                for i in region_list:
+                    if i['location'] != event['region']:
+                        region_list.append({'location': event['region']}) 
                 policy['core-network-configuration']['edge-locations'] = region_list
 
             # Q: How does one get region awareness for new branches discovered
@@ -413,6 +416,7 @@ Resources:
                 )
 
                 network_policy_version_id = response['CoreNetworkPolicy']['PolicyVersionId']
+                return network_policy_version_id
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
@@ -421,7 +425,7 @@ Resources:
               print (response)
               timer.cancel()
 
-            return network_policy_version_id
+            
       Policies:
       - AWSNetworkManagerFullAccess
       - AdministratorAccess
