@@ -316,8 +316,6 @@ Resources:
             Ref: VPCID
           # AmazonASNRange:
           #   Ref: AmazonASNRange
-          #MerakiEventBusArn: 
-          #  Ref: MerakiEventBusArn
           MerakiEventBusName:
             Ref: MerakiEventBusName
           GlobalNetworkName:
@@ -343,26 +341,26 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          # AmazonASNRange:
-          #   Ref: AmazonASNRange
-          # QSS3BucketName:
-          #   Ref: QSS3BucketName
-          # QSS3KeyPrefix:
-          #   Ref: QSS3KeyPrefix
-          # QSS3BucketRegion:
-          #   Ref: QSS3BucketRegion
-          # SDWANVPCRTID:
-          #   Ref: VPCRouteTableID
-          # MerakiAPIKey:
-          #   Ref: MerakiAPIKey
-          # MerakiOrgID:
-          #   Ref: MerakiOrgID
-          # vMX1MerakiNetworkTag:
-          #   Ref: vMX1MerakiNetworkTag
-          # vMX2MerakiNetworkTag:
-          #   Ref: vMX2MerakiNetworkTag
-          # LambdaRate:
-          #   Ref: LambdaRate
+          AmazonASNRange:
+            Ref: AmazonASNRange
+          QSS3BucketName:
+            Ref: QSS3BucketName
+          QSS3KeyPrefix:
+            Ref: QSS3KeyPrefix
+          QSS3BucketRegion:
+            Ref: QSS3BucketRegion
+          SDWANVPCRTID:
+            Ref: VPCRouteTableID
+          MerakiAPIKey:
+            Ref: MerakiAPIKey
+          MerakiOrgID:
+            Ref: MerakiOrgID
+          vMX1MerakiNetworkTag:
+            Ref: vMX1MerakiNetworkTag
+          vMX2MerakiNetworkTag:
+            Ref: vMX2MerakiNetworkTag
+          LambdaRate:
+            Ref: LambdaRate
           MerakiEventBusName:
             Ref: MerakiEventBusName
           BaseRegionName:
