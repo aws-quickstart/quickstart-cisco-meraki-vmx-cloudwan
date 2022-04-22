@@ -311,13 +311,18 @@ Resources:
         logger = logging.getLogger()
 
         def generate_network_policy(event): 
+            initial_policy_version_id = 0
             #fetch latest existing network policy document
             response = client.list_core_network_policy_versions(CoreNetworkId = event['CoreNetworkId'])
             if response['CoreNetworkPolicyVersions'] != []:
                 policy_response = client.get_core_network_policy(CoreNetworkId = event['CoreNetworkId'], Alias = 'LATEST')
+                initial_policy_version_id = policy_response['CoreNetworkPolicy']['PolicyVersionId']
                 policy = json.loads(policy_response['CoreNetworkPolicy']['PolicyDocument'])
+                initial_policy = policy
+                
             #create a new default policy skeleton
             else:
+                initial_policy = {}
                 policy = {}
                 policy['version'] = "2021.12"
                 policy['core-network-configuration'] = {
@@ -397,7 +402,7 @@ Resources:
                 }
 
                 policy['segment-actions'].append(segment_action)
-            return policy
+            return policy, initial_policy, initial_policy_version_id
                         
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
@@ -412,16 +417,19 @@ Resources:
 
             try: 
                 logger.info('Attaching network policy document to Meraki cloudwan core network')
-                network_policy = generate_network_policy(event)
+                network_policy, initial_policy, initial_policy_version_id = generate_network_policy(event)
                 print(network_policy)
                 print(json.dumps(network_policy))
-                response = client.put_core_network_policy(
-                    CoreNetworkId=event['CoreNetworkId'],
-                    PolicyDocument= json.dumps(network_policy)
-                )
-
-                network_policy_version_id = response['CoreNetworkPolicy']['PolicyVersionId']
-                return network_policy_version_id
+                if network_policy != initial_policy:
+                    response = client.put_core_network_policy(
+                        CoreNetworkId=event['CoreNetworkId'],
+                        PolicyDocument= json.dumps(network_policy)
+                    )
+            
+                    network_policy_version_id = response['CoreNetworkPolicy']['PolicyVersionId']
+                    return network_policy_version_id
+                else:
+                    return initial_policy_version_id
 
             except botocore.exceptions.ClientError as e:
               logging.error('Exception: %s' % e, exc_info=True)
@@ -1185,12 +1193,15 @@ Resources:
             ResultPath: $.NetworkPolicyChangeSetState
             Next: Network policy ready to execute?
           Network policy ready to execute?:
-            Type: Choice
             Choices:
-            - Variable: "$.NetworkPolicyChangeSetState"
+            - Next: Execute network policy changeset
               StringEquals: READY_TO_EXECUTE
-              Next: Execute network policy changeset
+              Variable: "$.NetworkPolicyChangeSetState"
+            - Variable: "$.NetworkPolicyChangeSetState"
+              StringEquals: EXECUTION_SUCCEEDED
+              Next: Get Endpoint Status
             Default: Wait 10 seconds for network policy
+            Type: Choice
           Execute network policy changeset:
             Type: Task
             Resource: !GetAtt ExecuteCoreNetworkChangeSetFunction.Arn
