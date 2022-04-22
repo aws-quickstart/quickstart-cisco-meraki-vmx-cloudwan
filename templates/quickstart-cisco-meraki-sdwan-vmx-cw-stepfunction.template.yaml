@@ -311,6 +311,7 @@ Resources:
         logger = logging.getLogger()
 
         def generate_network_policy(event): 
+            initial_policy = {}
             initial_policy_version_id = 0
             #fetch latest existing network policy document
             response = client.list_core_network_policy_versions(CoreNetworkId = event['CoreNetworkId'])
@@ -318,7 +319,8 @@ Resources:
                 policy_response = client.get_core_network_policy(CoreNetworkId = event['CoreNetworkId'], Alias = 'LATEST')
                 initial_policy_version_id = policy_response['CoreNetworkPolicy']['PolicyVersionId']
                 policy = json.loads(policy_response['CoreNetworkPolicy']['PolicyDocument'])
-                initial_policy = policy
+                initial_policy = json.loads(policy_response['CoreNetworkPolicy']['PolicyDocument'])
+
                 
             #create a new default policy skeleton
             else:
@@ -402,6 +404,8 @@ Resources:
                 }
 
                 policy['segment-actions'].append(segment_action)
+            
+
             return policy, initial_policy, initial_policy_version_id
                         
         def timeout(event, context):
