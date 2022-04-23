@@ -1327,13 +1327,8 @@ Resources:
     Properties:
       Definition:
         Comment: State machine to update meraki cloudwan global network
-        StartAt: Get core network ID
+        StartAt: Get core network status
         States:
-          Get core network ID:
-            Type: Task
-            Resource: !GetAtt GetCoreNetworkIdFromGlobal.Arn
-            ResultPath: $.CoreNetworkId
-            Next: Get core network status
           Get core network status:
             Type: Task
             Resource: !GetAtt DescribeCoreNetworksFunction.Arn
@@ -1390,24 +1385,8 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: EXECUTION_SUCCEEDED
-              Next: CallBack Lambda
+              End: true
             Default: Wait 60 seconds for execute core network changeset
-          CallBack Lambda:
-            Type: Task
-            Resource: arn:aws:states:::lambda:invoke
-            Parameters:
-              Payload.$: "$"
-              FunctionName: !GetAtt CallbackLambda.Arn
-            Retry:
-            - ErrorEquals:
-              - Lambda.ServiceException
-              - Lambda.AWSLambdaException
-              - Lambda.SdkClientException
-              IntervalSeconds: 2
-              MaxAttempts: 6
-              BackoffRate: 2
-            End: true
-            ResultPath: "$.callback"
       Policies:
       - LambdaInvokePolicy:
           FunctionName: !Ref UpdateNetworkPolicyFunction
@@ -1416,7 +1395,7 @@ Resources:
       - LambdaInvokePolicy:
           FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
       - LambdaInvokePolicy:
-          FunctionName: !Ref CallbackLambda              
+          FunctionName: !Ref DescribeCoreNetworksFunction            
       Events:
         UpdateNetworkRule:
           Type: EventBridgeRule
