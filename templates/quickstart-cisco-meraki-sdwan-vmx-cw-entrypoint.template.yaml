@@ -322,12 +322,12 @@ Outputs:
   #     Fn::GetAtt:
   #     - WorkloadStack
   #     - Outputs.MerakiEventBusArn
-  CreateNetworkStateMachineAdditionalRegion:
-    Description: The create network step function arn for additional region 
-    Value:
-      Fn::GetAtt:
-      - WorkloadStack
-      - Outputs.CreateNetworkStateMachineAdditionalRegion
+  # CreateNetworkStateMachineAdditionalRegion:
+  #   Description: The create network step function arn for additional region 
+  #   Value:
+  #     Fn::GetAtt:
+  #     - WorkloadStack
+  #     - Outputs.CreateNetworkStateMachineAdditionalRegion
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Value: !Ref MerakiEventBusName
