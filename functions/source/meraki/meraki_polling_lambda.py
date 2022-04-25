@@ -190,6 +190,10 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
     aws_events_client = boto3.client('events', region_name=base_region_name)
     aws_nm_client = boto3.client('networkmanager')
     network = {}
+    vpn_routes_flat_list = [routes for sublist in vpn_routes for routes in sublist]
+    str_vpn_routes = ",".join(vpn_routes_flat_list)
+    print("Convert list to string")
+    print(str_vpn_routes)
     print('Network Name:')
     print(network_name)
     print(event_bus_name)
@@ -228,7 +232,7 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
             {
                 'Source': 'com.aws.merakicloudwanquickstart',
                 'DetailType': 'update global network requested',
-                'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": vpn_routes, "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
+                'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [str_vpn_routes], "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
                 'EventBusName': event_bus_name
             }
             ]
