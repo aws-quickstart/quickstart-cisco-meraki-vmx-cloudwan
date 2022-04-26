@@ -227,18 +227,21 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, asn_range, globa
                     if attachment[1][0]['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
                         vpc_attachment_id = attachment[1][0]['AttachmentId']
                         core_network_id = attachment[1][0]['CoreNetworkId']
-        response = aws_events_client.put_events(
-            Entries=[
-            {
-                'Source': 'com.aws.merakicloudwanquickstart',
-                'DetailType': 'update global network requested',
-                'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [str_vpn_routes], "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
-                'EventBusName': event_bus_name
-            }
-            ]
-        )
-        logger.info(response)
-        return response
+        if str_vpn_routes:
+            response = aws_events_client.put_events(
+                Entries=[
+                {
+                    'Source': 'com.aws.merakicloudwanquickstart',
+                    'DetailType': 'update global network requested',
+                    'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [str_vpn_routes], "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
+                    'EventBusName': event_bus_name
+                }
+                ]
+            )
+            logger.info(response)
+            return response
+        else:
+            logger.info('No new routes, skipping the update state machine')
     except Exception as e:
                 print(e)
                 #requests_data=json.dumps(dict(Status='FAILURE',Reason='Exception: %s' % e,UniqueId='DeleteStateMachine',Data=event['ResourceProperties'])).encode('utf-8')
