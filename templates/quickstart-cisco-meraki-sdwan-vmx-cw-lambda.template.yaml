@@ -61,6 +61,7 @@ Parameters:
     Type: String
   AmazonASNRange:
     Description: Autonomous System Number (ASN) for CloudWAN Network. 
+    Default: 65000-65500
     Type: String
   MerakiEventBusName:
     Description: Name of CustomEventBus for EventBridge
