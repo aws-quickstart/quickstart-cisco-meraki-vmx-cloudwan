@@ -702,7 +702,6 @@ Resources:
         main(['install', '-I', '-q', 'boto3', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
         main(['install', '-I', '-q', 'requests', '--target', '/tmp/', '--no-cache-dir', '--disable-pip-version-check'])
         sys.path.insert(0,'/tmp/')  
-        sys.path.insert(0,'/tmp/') 
         import boto3
         import botocore
         import logging
@@ -1385,8 +1384,10 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: EXECUTION_SUCCEEDED
-            End: true
+              Next: SuccessState
             Default: Wait 60 seconds for execute core network changeset
+          SuccessState: 
+            Type: Succeed
       Policies:
       - LambdaInvokePolicy:
           FunctionName: !Ref UpdateNetworkPolicyFunction

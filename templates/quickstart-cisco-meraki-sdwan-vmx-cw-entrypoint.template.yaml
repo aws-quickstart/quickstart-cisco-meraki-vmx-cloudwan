@@ -331,9 +331,10 @@ Outputs:
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Value: !Ref MerakiEventBusName
-  GlobalNetworkName:
-    Description: The Meraki Event Bus Name
-    Value: !Ref GlobalNetworkName
+  # This will only display the prefix, not useful.  The actual name is displayed in the workload stack  
+  # GlobalNetworkName:
+  #   Description: The Meraki Event Bus Name
+  #   Value: !Ref GlobalNetworkName
   BaseRegionName:
     Description: The base region name for the Meraki cloudWAN Quickstart
     Value: !Ref AWS::Region
