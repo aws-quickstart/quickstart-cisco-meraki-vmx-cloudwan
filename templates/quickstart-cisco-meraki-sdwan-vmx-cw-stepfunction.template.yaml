@@ -377,9 +377,8 @@ Resources:
                     region_list.append({'location': event['region']}) 
                 #Additional Regions being added
                 else:
-                    for i in region_list:
-                        if i['location'] != event['region']:
-                            region_list.append({'location': event['region']}) 
+                    if {'location': event['region']} not in region_list:
+                        region_list.append({'location': event['region']}) 
                 policy['core-network-configuration']['edge-locations'] = region_list
 
             # Q: How does one get region awareness for new branches discovered
