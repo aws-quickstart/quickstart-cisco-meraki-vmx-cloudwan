@@ -1385,7 +1385,7 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: EXECUTION_SUCCEEDED
-              End: true
+            End: true
             Default: Wait 60 seconds for execute core network changeset
       Policies:
       - LambdaInvokePolicy:

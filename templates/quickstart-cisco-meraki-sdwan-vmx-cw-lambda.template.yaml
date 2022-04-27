@@ -59,9 +59,6 @@ Parameters:
     Description: AWS CloudWAN Global Network Name
     Default: "meraki-gn"
     Type: String
-  AmazonASNRange:
-    Description: Autonomous System Number (ASN) for CloudWAN Network. 
-    Type: String
   MerakiEventBusName:
     Description: Name of CustomEventBus for EventBridge
     Default: "MerakiEventBus"
@@ -73,7 +70,6 @@ Parameters:
 
 Conditions:
   UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
-  AmazonASNRange: !Equals [!Ref AmazonASNRange, '']
 
 Resources:
   MerakiApiKey:
@@ -189,7 +185,6 @@ Resources:
           az2_subnet_arn: !Sub
                     - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ2SubnetID}
                     - AZ2SubnetID: !Ref 'AvailabilityZone2SubnetID'
-          asn_range: !Ref 'AmazonASNRange'
           global_network_name: !Ref 'GlobalNetworkName'
            # we'll need to change the way regions list is passed for latest multi-regio design
           event_bus_name: !Ref 'MerakiEventBusName'
