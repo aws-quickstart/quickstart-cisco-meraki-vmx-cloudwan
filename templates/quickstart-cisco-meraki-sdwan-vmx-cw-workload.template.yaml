@@ -341,8 +341,6 @@ Resources:
             Ref: AZ2PublicSubnetID
           VPCID:
             Ref: VPCID
-          AmazonASNRange:
-            Ref: AmazonASNRange
           QSS3BucketName:
             Ref: QSS3BucketName
           QSS3KeyPrefix:
