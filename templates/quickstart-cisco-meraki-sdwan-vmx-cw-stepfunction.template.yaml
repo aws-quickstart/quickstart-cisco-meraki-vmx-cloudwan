@@ -391,7 +391,7 @@ Resources:
                         # if destination exists, append destination-cidr-blocks
                         if action['destinations'] == event['VpcAttachmentId']:
                             action['destination-cidr-blocks'] = event['destination_cidr_blocks']
-                            return policy
+                            return policy, initial_policy, initial_policy_version_id
                         
 
                 segment_action = {

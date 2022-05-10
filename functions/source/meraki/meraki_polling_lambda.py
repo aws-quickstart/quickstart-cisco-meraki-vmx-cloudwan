@@ -231,7 +231,7 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
                 {
                     'Source': 'com.aws.merakicloudwanquickstart',
                     'DetailType': 'update global network requested',
-                    'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [str_vpn_routes], "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
+                    'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": vpn_routes_flat_list, "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
                     'EventBusName': event_bus_name
                 }
                 ]
