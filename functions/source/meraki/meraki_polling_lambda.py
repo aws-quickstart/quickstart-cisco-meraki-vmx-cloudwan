@@ -188,13 +188,9 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
     aws_events_client = boto3.client('events', region_name=base_region_name)
     aws_nm_client = boto3.client('networkmanager')
     network = {}
+    cw_static_routes = []
     vpn_routes_flat_list = [routes for sublist in vpn_routes for routes in sublist]
     str_vpn_routes = ",".join(vpn_routes_flat_list)
-    print("Convert list to string")
-    print(str_vpn_routes)
-    print('Network Name:')
-    print(network_name)
-    print(event_bus_name)
     try: 
         response = aws_nm_client.describe_global_networks()
         for gn in response['GlobalNetworks']:
@@ -215,7 +211,7 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
                     #print(core['CoreNetworkId'])
                     network['CoreNetworkId'] = core['CoreNetworkId']
             except:
-                print('global network not found')
+                #print('global network not found')
                 pass
         print(network['CoreNetworkId'])
         attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region, CoreNetworkId=network['CoreNetworkId'])
@@ -225,13 +221,21 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
                     if attachment[1][0]['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
                         vpc_attachment_id = attachment[1][0]['AttachmentId']
                         core_network_id = attachment[1][0]['CoreNetworkId']
-        if str_vpn_routes:
+        #Get routes from cloudwan
+        cw_routes = aws_events_client.get_network_routes(GlobalNetworkId=network['GlobalNetworkId'], RouteTableIdentifier={'CoreNetworkSegmentEdge': {'CoreNetworkId': core_network_id, 'SegmentName': 'sdwan', 'EdgeLocation': region}}))
+        for routes in cw_routes['NetworkRoutes']:
+            if routes['Type'] == 'STATIC':
+                cw_static_routes.append(routes)
+            else:
+                logger.info('No static routes in cloudwan core network')
+        if set(str_vpn_routes) != set(cw_static_routes):
+        # new routes or delete old routes
             response = aws_events_client.put_events(
                 Entries=[
                 {
                     'Source': 'com.aws.merakicloudwanquickstart',
                     'DetailType': 'update global network requested',
-                    'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": vpn_routes_flat_list, "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
+                    'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": set(str_vpn_routes), "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
                     'EventBusName': event_bus_name
                 }
                 ]
