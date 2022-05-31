@@ -381,10 +381,9 @@ Resources:
                         region_list.append({'location': event['region']}) 
                 policy['core-network-configuration']['edge-locations'] = region_list
 
-            # Q: How does one get region awareness for new branches discovered
-            # as an enhancement, may want to implement the case to create a new route when one doesn't exist on an existing policy
-            if 'destination_cidr_blocks' in event.keys():
-                # walk through each segment-action
+
+            if 'destination_cidr_blocks' in event.keys() and event['destination_cidr_blocks'] != []:
+
                 for action in policy['segment-actions']:
                     # does create-route action exist?
                     if action['action'] == 'create-route':
@@ -404,9 +403,41 @@ Resources:
 
                 policy['segment-actions'].append(segment_action)
             
+            else:
+                #the segment-action must be removed if there are no more cidr blocks for the vpc attachment
+                #Cloud WAN will throw an error at an empty 'destination_cidr_blocks' field
+                #this is done by making a replica of the json policy without the empty segment-action
+                policy = remove_empty_segment_action(policy,event)
+            
 
             return policy, initial_policy, initial_policy_version_id
-                        
+
+        def remove_empty_segment_action(policy,event): 
+            #iterate over existing policy and copy over every item EXCEPT "create-route" item with empty "destination-cidr-blocks" list
+            new_policy = {"segment-actions":[]}
+            print("made it to remove_empty_segment_action")
+            
+            for k,v in policy.items():
+                if k == "segment-actions":
+                    #segment actions is a list, so we must iterate again
+                    for i in v:
+                        if i["action"] == "create-route":
+                            if i["destinations"][0] == event["VpcAttachmentId"][0]:
+                                print("skipping/removing because cidr-block is empty")
+                            #print(i["destinations"][0])
+                            #print(json_event["VpcAttachmentId"][0])
+                            else:                 
+                                new_policy[k].append(i)
+                                
+                        else:
+                            new_policy[k].append(i)
+                else:
+                    new_policy[k] = v
+            print('new_policy with segment removed:')
+            print(json.dumps(new_policy))
+            return new_policy
+
+                      
         def timeout(event, context):
             logging.error('Execution is about to time out, sending failure response to CloudFormation')
             requests_data=json.dumps(data=dict(Status='FAILURE',Reason='Lambda timeout',UniqueId='GlobalNetworkStates',Data='failed due to timeout')).encode('utf-8')
@@ -421,9 +452,13 @@ Resources:
             try: 
                 logger.info('Attaching network policy document to Meraki cloudwan core network')
                 network_policy, initial_policy, initial_policy_version_id = generate_network_policy(event)
-                print(network_policy)
+                #print(network_policy)
+                print("new network_policy")
                 print(json.dumps(network_policy))
+                print("old initial_policy")
+                print(json.dumps(initial_policy))
                 if network_policy != initial_policy:
+                    print("policies are different so we will execute the new policy")
                     response = client.put_core_network_policy(
                         CoreNetworkId=event['CoreNetworkId'],
                         PolicyDocument= json.dumps(network_policy)
@@ -440,6 +475,8 @@ Resources:
               response = requests.put(event['WaitHandle'], data=requests_data, headers={'Content-Type':''})
               print (response)
               timer.cancel()
+
+            
 
             
       Policies:
