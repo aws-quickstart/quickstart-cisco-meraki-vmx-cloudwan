@@ -190,7 +190,12 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
     network = {}
     cw_static_routes = []
     vpn_routes_flat_list = [routes for sublist in vpn_routes for routes in sublist]
-    str_vpn_routes = ",".join(set(vpn_routes_flat_list))
+    print("vpn_routes_flat_list before dedup: ")
+    print(vpn_routes_flat_list) 
+    vpn_routes_flat_list = list(dict.fromkeys(vpn_routes_flat_list))
+    print("vpn_routes_flat_list: ")
+    print(vpn_routes_flat_list)
+    #str_vpn_routes = ",".join(set(vpn_routes_flat_list))
     try: 
         response = aws_nm_client.describe_global_networks()
         for gn in response['GlobalNetworks']:
@@ -223,43 +228,30 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
                         core_network_id = attachment[1][0]['CoreNetworkId']
         #Get routes from cloudwan
         cw_routes = aws_nm_client.get_network_routes(GlobalNetworkId=network['GlobalNetworkId'], RouteTableIdentifier={'CoreNetworkSegmentEdge': {'CoreNetworkId': core_network_id, 'SegmentName': 'sdwan', 'EdgeLocation': region}})
-        print("Routes")
-        print(cw_routes)
+        print('cw_routes')
+        print(str(cw_routes))
         for routes in cw_routes['NetworkRoutes']:
             if routes['Type'] == 'STATIC':
                 cw_static_routes.append(routes['DestinationCidrBlock'])
             else:
                 logger.info('No static routes in cloudwan core network')
-        print (cw_static_routes)
-        if set(str_vpn_routes) != set(cw_static_routes):
-            if set(str_vpn_routes):
-            # new routes or delete old routes
-                response = aws_events_client.put_events(
-                    Entries=[
-                    {
-                        'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'update global network requested',
-                        'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [str_vpn_routes], "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
-                        'EventBusName': event_bus_name
-                    }
-                    ]
-                )
-                logger.info(response)
-                return response
-            else:
-                print('Empty Meraki Routes')
-                response = aws_events_client.put_events(
-                    Entries=[
-                    {
-                        'Source': 'com.aws.merakicloudwanquickstart',
-                        'DetailType': 'update global network requested',
-                        'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": [], "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
-                        'EventBusName': event_bus_name
-                    }
-                    ]
-                )
-                logger.info(response)
-                return response 
+        print('cw_static_routes: ')
+        print(cw_static_routes)
+        if vpn_routes_flat_list != cw_static_routes:
+        # new routes or delete old routes
+            print("change in routes detected.  Sending routes to the Update State Machine in Base Region")
+            response = aws_events_client.put_events(
+                Entries=[
+                {
+                    'Source': 'com.aws.merakicloudwanquickstart',
+                    'DetailType': 'update global network requested',
+                    'Detail': json.dumps({"network_name": network_name, "regions": [region], "destination_cidr_blocks": vpn_routes_flat_list, "VpcAttachmentId": [vpc_attachment_id], "CoreNetworkId": core_network_id}),
+                    'EventBusName': event_bus_name
+                }
+                ]
+            )
+            logger.info(response)
+            return response
         else:
             logger.info('No new routes, skipping the update state machine')
     except Exception as e:
