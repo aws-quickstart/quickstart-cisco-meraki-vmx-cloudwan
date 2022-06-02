@@ -383,28 +383,12 @@ Outputs:
       Fn::GetAtt:
       - VMX2Stack 
       - Outputs.vMXInstanceID
-  #These done exist - josh
-  # CorenetworkID:
-  #   Description: AWS Corenetwork ID.
-  #   Value:
-  #     Fn::GetAtt:
-  #     - MerakiLambdaStack
-  #     - Outputs.CorenetworkID
-  # CreateNetworkStateMachineAdditionalRegion:
-  #   Description: The create network step function arn for additional region 
-  #   Value:
-  #     Fn::GetAtt:
-  #     - StepFunctionStack
-  #     - Outputs.CreateNetworkStateMachineAdditionalRegion
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Value: !Ref MerakiEventBusName
   GlobalNetworkName:
     Description: The Meraki CloudWAN Global Network Name
     Value: !Sub ['${GlobalNetworkName}-${id}', {id: !Select [2, !Split ['/', !Ref AWS::StackId]]}]
-  # AmazonASNRange:
-  #   Description: The Meraki cloudWAN ASN Range Name
-  #   Value: !Ref AmazonASNRange
   BaseRegionName:
     Description: The base region name for the Meraki cloudWAN Quickstart
     Value: !Ref AWS::Region

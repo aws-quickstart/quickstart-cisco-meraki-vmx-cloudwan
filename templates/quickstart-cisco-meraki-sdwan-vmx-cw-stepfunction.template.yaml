@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  This stack is creating creates a step function workflow for meraki cloudWAN.(qs-1srtkbc3l)
+  This stack creates multiple Step Function workflows to create/update Cloud WAN resources.(qs-1srtkbc3l)
 
 Globals:
   Function:
@@ -1049,19 +1049,6 @@ Resources:
           FunctionName: !Ref ExecuteCoreNetworkChangeSetFunction
       - LambdaInvokePolicy:
           FunctionName: !Ref CallbackLambda            
-      # Events:
-      #   CreateNetworkRule:
-      #     Type: EventBridgeRule
-      #     Properties:
-      #       EventBusName: !Ref MerakiEventBus
-      #       InputPath: $.detail
-      #       Pattern:
-      #         source:
-      #           - com.aws.merakicloudwanquickstart
-      #         detail-type:
-      #           - new meraki global network requested
-      #         account:
-      #           - !Ref AWS::AccountId
 
   CreateNetworkEventRule:
     Type: AWS::Events::Rule
@@ -1111,76 +1098,6 @@ Resources:
               Resource:
               - arn:aws:states:*:*:stateMachine:*
                 
-
-  # CreateNetworkNewRegion:
-  #   Type: AWS::Serverless::StateMachine
-  #   #DependsOn:
-  #   # Implicit DependsOn with !GetAtt <function>
-  #   #- CallbackLambda
-  #   #- CreateVpcAttachmentFunction
-  #   #- GetVpcAttachmentFunction
-  #   Properties:
-  #     Definition:
-  #         Comment: State machine to update meraki global cloudwan network with additional region
-  #         StartAt: Create Vpc Attachment
-  #         States:
-  #           Create Vpc Attachment:
-  #             Type: Task
-  #             Resource: !GetAtt CreateVpcAttachmentFunction.Arn
-  #             ResultPath: $.Destinations
-  #             Next: Wait 60 seconds for attachment creation
-  #           Wait 60 seconds for attachment creation:
-  #             Type: Wait
-  #             Seconds: 60
-  #             Next: Get vpc attachment status 
-  #           Get vpc attachment status:
-  #             Type: Task
-  #             Resource: !GetAtt GetVpcAttachmentFunction.Arn
-  #             ResultPath: $.VpcAttachmentState
-  #             Next: VPC attachment created?
-  #           VPC attachment created?:
-  #             Type: Choice
-  #             Choices:
-  #             - Variable: "$.VpcAttachmentState"
-  #               StringEquals: AVAILABLE
-  #               Next: CallBack Lambda
-  #             Default: Wait 60 seconds for attachment creation
-  #           CallBack Lambda:
-  #             Type: Task
-  #             Resource: arn:aws:states:::lambda:invoke
-  #             Parameters:
-  #               Payload.$: "$"
-  #               FunctionName: !GetAtt CallbackLambda.Arn
-  #             Retry:
-  #             - ErrorEquals:
-  #               - Lambda.ServiceException
-  #               - Lambda.AWSLambdaException
-  #               - Lambda.SdkClientException
-  #               IntervalSeconds: 2
-  #               MaxAttempts: 6
-  #               BackoffRate: 2
-  #             End: true
-  #             ResultPath: "$.callback"
-  #     Policies:
-  #     - LambdaInvokePolicy:
-  #         FunctionName: !Ref CreateVpcAttachmentFunction
-  #     - LambdaInvokePolicy:
-  #         FunctionName: !Ref GetVpcAttachmentFunction
-  #     - LambdaInvokePolicy:
-  #         FunctionName: !Ref CallbackLambda      
-  #     Events:
-  #       NewRegionRule:
-  #         Type: EventBridgeRule
-  #         Properties:
-  #           EventBusName: !Ref MerakiEventBusName
-  #           InputPath: $.detail
-  #           Pattern:
-  #             source:
-  #               - com.aws.merakicloudwanquickstart
-  #             detail-type:
-  #               - new meraki additional region requested
-  #             account:
-  #               - !Ref AWS::AccountId
 
 
 

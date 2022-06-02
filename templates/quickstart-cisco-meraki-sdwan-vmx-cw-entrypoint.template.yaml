@@ -310,24 +310,6 @@ Outputs:
       Fn::GetAtt:
       - WorkloadStack
       - Outputs.vMX2InstanceID
-  # CorenetworkID:
-  #   Description: Core Network ID.
-  #   Value:
-  #     Fn::GetAtt:
-  #     - WorkloadStack
-  #     - Outputs.CorenetworkID
-  # MerakiEventBusARN:
-  #   Description: The Meraki Event Bus ARN
-  #   Value:
-  #     Fn::GetAtt:
-  #     - WorkloadStack
-  #     - Outputs.MerakiEventBusArn
-  # CreateNetworkStateMachineAdditionalRegion:
-  #   Description: The create network step function arn for additional region 
-  #   Value:
-  #     Fn::GetAtt:
-  #     - WorkloadStack
-  #     - Outputs.CreateNetworkStateMachineAdditionalRegion
   MerakiEventBusName:
     Description: The Meraki Event Bus Name
     Value: !Ref MerakiEventBusName

@@ -12,7 +12,6 @@ Metadata:
       - Label:
           default: Meraki configuration
         Parameters:
-          # Can we get Meraki OrgID and API Key from the base region template?
           - MerakiOrgID
           - MerakiAPIKey
           - NumberOfvMXs
@@ -81,8 +80,6 @@ Metadata:
         default: Quick Start S3 key prefix
       LambdaRate:
         default: CloudWatch Events rule rate
-#      MerakiEventBusArn:
-#        default: "MerakiEventBusArn"
       MerakiEventBusName:
         default: "Meraki CloudWAN EventBus Name"
       GlobalNetworkName:
@@ -303,7 +300,6 @@ Resources:
             Ref: QSS3BucketRegion
           SDWANVPCRTID:
             Ref: VPCRouteTableID
-          #get MerakiAPIKey and MerakiOrgID from secrets manager
           MerakiAPIKey:
             Ref: MerakiAPIKey
           MerakiOrgID:
@@ -337,18 +333,6 @@ Outputs:
       Fn::GetAtt:
       - VMX2Stack 
       - Outputs.vMXInstanceID
-  # CorenetworkID:
-  #   Description: AWS Corenetwork ID.
-  #   Value:
-  #     Fn::GetAtt:
-  #     - MerakiLambdaStack
-  #     - Outputs.CorenetworkID
-  # MerakiEventBusARN:
-  #   Description: The Meraki Event Bus ARN
-  #   Value:
-  #     Fn::GetAtt:
-  #     - StepFunctionStack
-  #     - Outputs.MerakiEventBusArn
   Postdeployment:
     Description: See the deployment guide for postdeployment steps.
     Value: https://aws.amazon.com/quickstart/?quickstart-all.sort-by=item.additionalFields.s
