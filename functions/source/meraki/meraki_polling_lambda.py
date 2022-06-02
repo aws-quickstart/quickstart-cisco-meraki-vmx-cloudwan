@@ -220,12 +220,23 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
                 pass
         print(network['CoreNetworkId'])
         attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region, CoreNetworkId=network['CoreNetworkId'])
-        for attachment in attachments.items():
-            if attachment[0] == 'Attachments':
-                if attachment[1][0]['Tags'][0]['Key'] == 'Name':
-                    if attachment[1][0]['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
-                        vpc_attachment_id = attachment[1][0]['AttachmentId']
-                        core_network_id = attachment[1][0]['CoreNetworkId']
+        print('attachments:')
+        print(str(attachments))
+
+        #loop through json of all attachments for single region.  There should only be 1 Transit VPC attachment per region (tag of Name/Meraki-SDWAN-VPC )
+        #once found, define vpc_attachment_id (also core_network_id but technically we could use network['CoreNetworkId'] instead )
+        for k,v in attachments.items():
+            if k == 'Attachments':
+                for i in v:
+                    print(i)
+                    if i['Tags'][0]['Key'] == 'Name':
+                        if i['Tags'][0]['Value'] == 'Meraki-SDWAN-VPC':
+                            vpc_attachment_id = i['AttachmentId']
+                            core_network_id = i['CoreNetworkId']
+                            print("core_network_id:")
+                            print(core_network_id)
+                            print("vpc_attachment_id:")
+                            print(vpc_attachment_id)  
         #Get routes from cloudwan
         cw_routes = aws_nm_client.get_network_routes(GlobalNetworkId=network['GlobalNetworkId'], RouteTableIdentifier={'CoreNetworkSegmentEdge': {'CoreNetworkId': core_network_id, 'SegmentName': 'sdwan', 'EdgeLocation': region}})
         print('cw_routes')
@@ -239,7 +250,7 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
         print(cw_static_routes)
         if vpn_routes_flat_list != cw_static_routes:
         # new routes or delete old routes
-            print("change in routes detected.  Sending routes to the Update State Machine in Base Region")
+            logger.info("Change in routes detected.  Sending routes to the Update State Machine in Base Region")
             response = aws_events_client.put_events(
                 Entries=[
                 {
