@@ -1399,7 +1399,10 @@ Resources:
             Choices:
             - Variable: "$.NetworkPolicyChangeSetState"
               StringEquals: READY_TO_EXECUTE
-              Next: Execute core network change set
+              Next: Execute core network change set  
+            - Variable: $.NetworkPolicyChangeSetState
+              StringEquals: EXECUTION_SUCCEEDED
+              Next: SuccessState                          
             Default: Wait 10 seconds for network policy
           Execute core network change set:
             Type: Task
