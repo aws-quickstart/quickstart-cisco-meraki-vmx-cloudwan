@@ -353,7 +353,7 @@ Resources:
                         'conditions': [
                             {
                                 'type': 'tag-value',
-                                'key': 'name',
+                                'key': 'Name',
                                 'operator': 'contains',
                                 'value': 'Meraki-SDWAN-VPC'
                             }
