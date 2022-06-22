@@ -403,7 +403,8 @@ Resources:
 
                 policy['segment-actions'].append(segment_action)
             
-            else:
+            elif 'destination_cidr_blocks' in event.keys() and event['destination_cidr_blocks'] == []:
+                #only run during 'polling lambda' update, not the 'createNewNetwork' update
                 #the segment-action must be removed if there are no more cidr blocks for the vpc attachment
                 #Cloud WAN will throw an error at an empty 'destination_cidr_blocks' field
                 #this is done by making a replica of the json policy without the empty segment-action
