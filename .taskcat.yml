@@ -1,7 +1,3 @@
-general:
-  auth:
-    default: Wrapped
-    
 project:
   name: quickstart-cisco-meraki-sd-wan-cw
   regions:
