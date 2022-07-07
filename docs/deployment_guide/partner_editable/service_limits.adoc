@@ -1,0 +1,34 @@
+// Replace the <n> in each row to specify the number of resources used in this deployment. Remove the rows for resources that aren’t used.
+|===
+|**Base Region Resources** |**This deployment uses**
+|VPCs |1
+|Elastic IP addresses |2
+|Security Groups |1
+|AWS Identity and Access Management (IAM) roles |79
+|EC2 Instances |2
+|EC2 key pairs |1
+|AWS Lambda functions |34
+|AWS Secrets Manager secrets |1
+|CloudWatch event rules |5
+|EC2 Instances |2
+|Step Functions |4
+|Cloud WAN core networks |1
+|Cloud WAN VPC Attachment |1
+|===
+
+
+|===
+|**Additional Region Resources** |**This deployment uses**
+|VPCs |1
+|Elastic IP addresses |2
+|Security Groups |1
+|EC2 Instances |2
+|EC2 key pairs |1
+|AWS Lambda functions |4
+|AWS Secrets Manager secrets |1
+|CloudWatch event rules |5
+|EC2 Instances |2
+|Step Functions |0
+|Cloud WAN core networks |0
+|Cloud WAN VPC Attachment |0
+|===

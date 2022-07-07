@@ -1,0 +1,6 @@
+// Replace the content in <>
+// Briefly describe the software. Use consistent and clear branding. 
+// Include the benefits of using the software on AWS, and provide details on usage scenarios.
+
+image::CW_overview.png[image,width=648,height=439]
+This Quick Start will help automate the highly available deployment of Meraki vMXs in multiple AWS regions along with route propagation.  Multiple Meraki branch MXs can AutoVPN connect to AWS regional vMX hubs configured in an active-active pair.  All routes learned via AutoVPN are propagated into AWS for seamless connectivity from your branch locations to your AWS workloads in any region.  This is accomplished via the newly launched AWS Cloud WAN service, Meraki APIs, and a serverless mechanism for distributing routes without BGP.  Please see <BLOG POST> for a high level overview.

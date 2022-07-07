@@ -1,0 +1,1 @@
+This guide provides instructions for deploying the Meraki vMX Quick Start reference architecture on the AWS Cloud. It helps organizations connect software-defined wide area networks (SD-WANs) to applications running on AWS.
