@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 
 
 def get_meraki_key():
-    secret_name = 'MerakiAPIKey'
+    secret_name = 'MerakiAPIKey' # nosec
     region = os.environ['AWS_REGION']
     session = boto3.session.Session()
     client = session.client(
@@ -213,10 +213,9 @@ def update_network_event_json(vpn_routes, vpc_arn, subnet_arns, global_network_n
             #not all items returned will have a global network, so it will throw an error without try/except
             try: 
                 if core['GlobalNetworkId'] == network['GlobalNetworkId']:
-                    #print(core['CoreNetworkId'])
                     network['CoreNetworkId'] = core['CoreNetworkId']
             except:
-                #print('global network not found')
+                logger.info('Global Network not found')
                 pass
         print(network['CoreNetworkId'])
         attachments = aws_nm_client.list_attachments(AttachmentType='VPC', EdgeLocation=region, CoreNetworkId=network['CoreNetworkId'])
