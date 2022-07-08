@@ -2,10 +2,10 @@
 :partner-product-name: Cisco Meraki vMX with Cloud WAN
 :partner-product-short-name: Meraki vMX
 :partner-company-name: Meraki
-:doc-month: May
+:doc-month: July
 :doc-year: 2022
-:partner-contributors: Simarbir ...
-:quickstart-contributors: Josh Leatham & Muffadal Quettawala - Sr AWS Partner Solution Architects
+:partner-contributors: Simarbir Singh - Cisco Technical Marketing Engineer
+:quickstart-contributors: Josh Leatham - AWS Partner Solution Architect
 :deployment_time: 30 minutes / 1 hour
 :default_deployment_region: us-east-1
 :marketplace_subscription:

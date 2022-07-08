@@ -65,8 +65,7 @@ Each deployment takes about {deployment_time} to complete.
 
 . Deploy the Base Region template
 .. Sign in to your AWS account, and choose one of the following options to launch the AWS CloudFormation template. For help with choosing an option, see link:#_deployment_options[Deployment options] earlier in this guide.
-+
-Need to change these links?????????????
+
 +
 [cols="3,1"]
 |===
@@ -110,7 +109,7 @@ image::CW_global_network.png[image,width=648,height=439]
 image::CW_core_network.png[image,width=648,height=439]
 +
 image::CW_attachment.png[image,width=648,height=439]
-MAYBE add a GIF here???????
+
 . Add VPC summary route to Cloud WAN VPC Attachment
 .. In order for the Transit VPC to route traffic to your Cloud WAN backbone, you must have a route/routes for the IP address range of your AWS workloads across the various deployed regions
 .. Pick an IP CIDR range that will differentiate your AWS resources from your branch and on-prem resources
@@ -131,8 +130,6 @@ Each deployment takes about {deployment_time} to complete.
 TIP: Ensure that you are in a different region than the Base Region above
 +
 .. Sign in to your AWS account, and choose one of the following options to launch the AWS CloudFormation template. For help with choosing an option, see link:#_deployment_options[Deployment options] earlier in this guide.
-+
-Need to change these links?????????????
 +
 [cols="3,1"]
 |===
@@ -169,8 +166,10 @@ ifdef::partner-product-short-name[.. Monitor the status of the stack. When the s
 TIP: The Cloud WAN resources are executed in the **Base Region** above by the Update State Machine and the CreateNetworkNewRegion State Machine 
 .. Verify that Step Functions State Machines ran successfully for the CreateNetworkNewRegion State Machine(runs once per template).  The CreateStateMachine is not ran as Cloud WAN is a global service and only needs to be created once with the Base Template: https://console.aws.amazon.com/states[Step Function Console^]
 .. A new SDWAN Attachment will have been created and attached to the Additional Region's Transit VPC
+
 +
 image::SF_verify.png[image,width=648,height=439]
+
 .. Verify that Cloud WAN contains a Global Network, Core Network, and a VPC Attachment: https://console.aws.amazon.com/networkmanager/home#/networks[Network Manager Console^]
 
 . Add VPC summary route to Cloud WAN VPC Attachment
