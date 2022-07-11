@@ -1,0 +1,6 @@
+[submodule "submodules/quickstart-aws-vpc"]
+	path = submodules/quickstart-aws-vpc
+	url = https://github.com/aws-quickstart/quickstart-aws-vpc.git
+[submodule "submodules/quickstart-cisco-meraki-sd-wan-vmx"]
+	path = submodules/quickstart-cisco-meraki-sd-wan-vmx
+	url = https://github.com/aws-quickstart/quickstart-cisco-meraki-sd-wan-vmx

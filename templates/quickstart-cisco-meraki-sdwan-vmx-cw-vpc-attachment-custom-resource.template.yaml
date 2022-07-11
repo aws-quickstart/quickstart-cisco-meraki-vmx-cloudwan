@@ -1,0 +1,140 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This stack creates a custom resource lambda that sends an additional region network create event to eventsbridge.(qs-1srtkbc3l)
+
+Parameters:
+  GlobalNetworkName:
+    Description: AWS CloudWAN Global Network Name
+    Default: "meraki-gn"
+    Type: String
+  MerakiEventBusName:
+    Description: Name of CustomEventBus for EventBridge
+    Default: "MerakiEventBus"
+    Type: String
+  VPCID:
+    Description: 'ID of the VPC (e.g., vpc-0343606e)'
+    Type: 'AWS::EC2::VPC::Id'
+  AvailabilityZone1SubnetID:
+    Description: Subnet ID to be used for the deployment of vMX-1 in Availability Zone 1
+    Type: 'AWS::EC2::Subnet::Id'
+  AvailabilityZone2SubnetID:
+    Description: Subnet ID to be used for the deployment of vMX-2 in Availability Zone 2
+    Type: 'AWS::EC2::Subnet::Id'
+  BaseRegionName:
+    Description: Base Region Name
+    Type: String
+
+Resources:
+
+  StateMachineWaitCondition:
+    Type: AWS::CloudFormation::WaitCondition
+    # DependsOn: 
+    Properties:
+      Handle: !Ref StateMachineWaitHandle
+      Timeout: 7200
+      Count: 1
+  
+  StateMachineWaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+
+  VpcAttachmentCustomResource:
+    Type: Custom::VpcAttachmentLambda
+    Properties:
+      ServiceToken: !GetAtt VpcAttachmentCustomResourceLambda.Arn
+      WaitHandle: !Ref StateMachineWaitHandle
+      EventBusName: !Ref 'MerakiEventBusName'
+      Az1SubnetArn: !Sub
+                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ1SubnetID}
+                - AZ1SubnetID: !Ref 'AvailabilityZone1SubnetID'
+      Az2SubnetArn: !Sub
+                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:subnet/${AZ2SubnetID}
+                - AZ2SubnetID: !Ref 'AvailabilityZone2SubnetID'
+      VPCId: !Ref 'VPCID'
+      VPCArn: !Sub 
+                - arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${VPC_ID}
+                - VPC_ID: !Ref 'VPCID'
+      GlobalNetworkName: !Ref 'GlobalNetworkName'
+      BaseRegionName: !Ref BaseRegionName
+
+  VpcAttachmentCustomResourceLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Lambda for VpcAttachmentCustomResource
+      Handler: index.handler
+      Runtime: python3.8
+      Role: !GetAtt VpcAttachmentCustomResourceLambdaRole.Arn
+      Timeout: 300
+      Code:
+        ZipFile: !Sub | 
+          import boto3
+          import json
+          import cfnresponse
+          import os
+          from botocore.vendored import requests
+
+          region = os.environ['AWS_REGION']
+
+          
+
+          def handler(event, context):
+            print('Received event: %s' % json.dumps(event))
+            status = cfnresponse.SUCCESS
+            responseData = {}
+            
+            EventBusName = event['ResourceProperties']['EventBusName']
+            vpc_arn = event['ResourceProperties']['VPCArn']
+            az1_subnet_arns = event['ResourceProperties']['Az1SubnetArn']
+            az2_subnet_arns = event['ResourceProperties']['Az2SubnetArn']
+            subnet_arns = [az1_subnet_arns, az2_subnet_arns]
+            global_network_name = event['ResourceProperties']['GlobalNetworkName']
+            base_region_name = event['ResourceProperties']['BaseRegionName']
+
+            aws_client = boto3.client('events', region_name=base_region_name)
+            
+            try:
+              if event['RequestType'] == 'Create':
+                response = aws_client.put_events(
+                    Entries=[
+                    {
+                        'Source': 'com.aws.merakicloudwanquickstart',
+                        'DetailType': 'new meraki additional region requested',
+                        'Detail': json.dumps({"network_name": global_network_name, "region": region, "VpcArn": vpc_arn, "SubnetArns": subnet_arns, "WaitHandle": event['ResourceProperties']['WaitHandle']}),
+                        'EventBusName': EventBusName
+                    }
+                    ]
+                )
+                print(response)
+                responseData = response     
+              elif event['RequestType'] == 'Delete':
+                print('Stack Deletion.  All Cloud WAN resources are cleaned up by a separate State Machine')   
+            except Exception as e:
+              print(e)
+              status = cfnresponse.FAILED
+            finally:
+              cfnresponse.send(event, context, status, responseData)
+  
+  VpcAttachmentCustomResourceLambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - lambda.amazonaws.com
+            Action:
+            - sts:AssumeRole
+        ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        Path: "/"
+        Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*"
+

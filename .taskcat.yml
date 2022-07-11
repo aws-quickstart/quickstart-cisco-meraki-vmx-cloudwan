@@ -1,0 +1,68 @@
+project:
+  name: quickstart-cisco-meraki-sd-wan-cw
+  regions:
+  - us-east-1
+  s3_regional_buckets: true
+  shorten_stack_name: True
+
+#Base Region
+tests:
+  default:
+    template: ./templates/quickstart-cisco-meraki-sdwan-vmx-cw-entrypoint.template.yaml
+    regions:
+    - us-east-1
+    parameters:
+      AvailabilityZones: "$[taskcat_getaz_2]"
+      EmailAddress: "example@test.com"
+      KeyPairName: "your-key-pair"
+      vMX1Token: "YOUR-VMX1-TOKEN-FOUND-IN-APPLIANCE-DASHBOARD"
+      vMX2Token: "YOUR-VMX2-TOKEN-FOUND-IN-APPLIANCE-DASHBOARD"
+      AmazonSideASN: "65500"
+      AmazonSideASNRange: "65000-65500"
+      InstanceType: "c5.large"
+      MerakiAPIKey: "YOUR-MERAKI-API-KEY"
+      MerakiOrgID: "YOUR-ORG-ID"
+      NumberOfvMXs: "2"
+      VPCCIDR: "10.249.0.0/16"
+      AvailabilityZone1CIDR: "10.249.0.0/24"
+      AvailabilityZone2CIDR: "10.249.1.0/24"
+      LambdaRate: "rate(1 minute)"
+      vMX1MerakiNetworkTag: "vMX1"
+      vMX2MerakiNetworkTag: "vMX2"
+      GlobalNetworkName: "meraki_gn"
+      MerakiEventBusName: "MerakiCloudWANEventBus"
+      QSS3KeyPrefix: "quickstart-cisco-meraki-sd-wan-cw/"
+      QSS3BucketRegion: "$[taskcat_current_region]"
+      QSS3BucketName: "$[taskcat_autobucket]"
+
+
+#Additional region
+# tests:
+#   default:
+#     template: ./templates/quickstart-cisco-meraki-sdwan-vmx-cw-additional-region-entrypoint.template.yaml
+#     regions:
+#     - us-west-1
+#     parameters:
+#       BaseRegionName: "us-east-1"
+#       AvailabilityZones: "$[taskcat_getaz_2]"
+#       EmailAddress: "example@test.com"
+#       KeyPairName: "your-key-pair"
+#       vMX1Token: "YOUR-VMX1-TOKEN-FOUND-IN-APPLIANCE-DASHBOARD"
+#       vMX2Token: "YOUR-VMX2-TOKEN-FOUND-IN-APPLIANCE-DASHBOARD"
+#       # AmazonSideASN: "65500"
+#       # AmazonSideASNRange: "65000-65500"
+#       InstanceType: "c5.large"
+#       MerakiAPIKey: "YOUR-MERAKI-API-KEY"
+#       MerakiOrgID: "YOUR-ORG-ID"
+#       NumberOfvMXs: "2"
+#       VPCCIDR: "10.250.0.0/16"
+#       AvailabilityZone1CIDR: "10.250.0.0/24"
+#       AvailabilityZone2CIDR: "10.250.1.0/24"
+#       LambdaRate: "rate(1 minute)"
+#       vMX1MerakiNetworkTag: "vMX3"
+#       vMX2MerakiNetworkTag: "vMX4"
+#       GlobalNetworkName: "meraki-gn-8f7068f0-c09d-11ec-a305-0aa1e709c5b1"
+#       MerakiEventBusName: "MerakiCloudWANEventBus"
+#       QSS3KeyPrefix: "quickstart-cisco-meraki-sd-wan-cw/"
+#       QSS3BucketRegion: "$[taskcat_current_region]"
+#       QSS3BucketName: "$[taskcat_autobucket]"
