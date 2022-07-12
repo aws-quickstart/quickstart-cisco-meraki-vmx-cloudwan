@@ -1,3 +1,27 @@
 //Include any predeployment steps here, such as signing up for a Marketplace AMI or making any changes to a partner account. If there are no predeployment steps, leave this file empty.
 
 == Predeployment steps
+
+This Quick Start assumes familiarity with the https://documentation.meraki.com/Getting_Started[Meraki dashboard^] and setting up a vMX appliance on AWS. For more information, see https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Amazon_Web_Services_(AWS)[vMX setup guide for Amazon Web Services (AWS)^].
+
+=== Prepare your AWS account
+
+==== Subscribe to the {partner-product-short-name} AMI
+This Quick Start requires a subscription to the AMI for {partner-product-short-name} in AWS Marketplace.
+
+. Sign in to your AWS account.
+. Open the page for the {marketplace_listing_url}[{marketplace_subscription} AMI in AWS Marketplace^], and then choose *Continue to Subscribe*.
+. Review the terms and conditions for software usage, and then choose *Accept Terms*. +
+  A confirmation page loads, and an email confirmation is sent to the account owner. For detailed subscription instructions, see the https://aws.amazon.com/marketplace/help/200799470[AWS Marketplace documentation^].
+. When the subscription process is complete, exit out of AWS Marketplace without further action. *Do not* provision the software from AWS Marketplace—the Quick Start deploys the AMI for you.
+
+=== Prepare your {partner-product-short-name} account
+. Complete the instructions in the "Meraki Dashboard Configuration" section of the https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Amazon_Web_Services_(AWS)[vMX Setup Guide for Amazon Web Services (AWS)^]. During configuration, you generate authentication tokens for the vMX appliances. Copy and save the tokens. You must enter them in the `vMX1Token` and `vMX2Token` parameters in the AWS CloudFormation console during Quick Start deployment.
++
+image::../docs/deployment_guide/images/meraki_vmx1.png[image,width=648,height=439]
+
+
+* Enable API access to your Meraki organization. For more information, see https://documentation.meraki.com/General_Administration/Other_Topics/Cisco_Meraki_Dashboard_API[Cisco Meraki Dashboard API^]. 
+* Add vMX licenses to the Meraki dashboard. For more information, see https://documentation.meraki.com/General_Administration/Organizations_and_Networks/Organization_Menu/License_Info_Page_-_Co-Termination_License_Model#Add_Another_License[Add Another License^].
+
+For more information on how to obtain licenses, see link:#_licenses[Software licenses], previously in this guide.
