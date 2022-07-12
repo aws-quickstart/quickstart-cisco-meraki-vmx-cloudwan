@@ -18,7 +18,9 @@ This Quick Start requires a subscription to the AMI for {partner-product-short-n
 === Prepare your {partner-product-short-name} account
 . Complete the instructions in the "Meraki Dashboard Configuration" section of the https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Amazon_Web_Services_(AWS)[vMX Setup Guide for Amazon Web Services (AWS)^]. During configuration, you generate authentication tokens for the vMX appliances. Copy and save the tokens. You must enter them in the `vMX1Token` and `vMX2Token` parameters in the AWS CloudFormation console during Quick Start deployment.
 +
-image::../docs/deployment_guide/images/meraki_vmx1.png[image,width=648,height=439]
+[#generate_auth_token]
+.Generating authentication tokens
+image::../docs/deployment_guide/images/meraki_vmx1.png[generate_auth_token,width=648,height=439]
 
 
 * Enable API access to your Meraki organization. For more information, see https://documentation.meraki.com/General_Administration/Other_Topics/Cisco_Meraki_Dashboard_API[Cisco Meraki Dashboard API^]. 
