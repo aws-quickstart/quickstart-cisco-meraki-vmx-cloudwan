@@ -1,3 +1,39 @@
 // Include any postdeployment steps here, such as steps necessary to test that the deployment was successful. If there are no postdeployment steps, leave this file empty.
 
 == Postdeployment steps
+
+=== Verify Cloud WAN resources
+
+. Verify that Step Functions State Machines ran successfully for both the CreateStateMachine as well as the CreateNetworkNewRegion State Machine(runs once per template): https://console.aws.amazon.com/states[Step Function Console^].
++
+[#sf_verify]
+.Verify Step Function
+image::../docs/deployment_guide/images/SF_verify.png[sf_verify,width=648,height=439]
+
+. Verify that Cloud WAN contains a Global Network, Core Network, and a VPC Attachment: https://console.aws.amazon.com/networkmanager/home#/networks[Network Manager Console^].
++
+[#global_network]
+.Global Network
+image::../docs/deployment_guide/images/CW_global_network.png[global_network,width=648,height=439]
++
+[#core_network]
+.Core Network
+image::../docs/deployment_guide/images/CW_core_network.png[core_network,width=648,height=439]
++
+[#vpc_attachment]
+.VPC Attachment
+image::../docs/deployment_guide/images/CW_attachment.png[vpc_attachment,width=648,height=439]
+
+=== Add VPC summary route to Cloud WAN VPC Attachment
+
+In order for the Transit VPC to route traffic to your Cloud WAN backbone, you must have a route/routes for the IP address range of your AWS workloads across the various deployed regions.
+. Pick an IP CIDR range that will differentiate your AWS resources from your branch and on-prem resources.
+. Point the route to the Core Network's VPC attachment for the transit VPC. See https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html[documentation^] for guidance.
++
+[#vpc_route]
+.VPC Route
+image::../docs/deployment_guide/images/VPC_RT.gif[vpc_route,width=648,height=439]
+. Optionally, add workload VPCs from different Cloud WAN segments into your Core Network Policy. If you have workloads in separate Cloud WAN segments, you can advertise those routes to your Meraki SDWAN vMXs via the Core Network Policy. See https://aws.amazon.com/blogs/networking-and-content-delivery/introducing-aws-cloud-wan-preview/[documentation^] for guidance.
+
+=== Launch the Additional Region template 
+
