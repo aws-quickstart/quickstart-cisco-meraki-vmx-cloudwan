@@ -35,5 +35,26 @@ In order for the Transit VPC to route traffic to your Cloud WAN backbone, you mu
 image::../docs/deployment_guide/images/VPC_RT.gif[vpc_route,width=648,height=439]
 . Optionally, add workload VPCs from different Cloud WAN segments into your Core Network Policy. If you have workloads in separate Cloud WAN segments, you can advertise those routes to your Meraki SDWAN vMXs via the Core Network Policy. See https://aws.amazon.com/blogs/networking-and-content-delivery/introducing-aws-cloud-wan-preview/[documentation^] for guidance.
 
-=== Launch the Additional Region template 
+=== Deploy Transit VPC in additional region
 
+TIP: Ensure that you are in a different region than the Base Region, where you deployed the stack earlier.
+
+There are following deployment options:
+
+* http://qs_launch_permalink[Deploy additional Transit VPC in a new Region^]. This option deploys Transit VPC in additional region you choose, along with a polling lambda function to check and configure additional routes.
+
+. Check the AWS Region that’s displayed in the upper-right corner of the navigation bar, and change it if necessary. This Region is where you build the network infrastructure. The template is launched in the {default_deployment_region} Region by default. For other choices, see link:#_supported_regions[Supported Regions] earlier in this guide.
+. On the *Create stack* page, keep the default setting for the template URL, and then choose *Next*.
+. On the *Specify stack details* page, change the stack name if needed. Review the parameters for the template. Provide values for the parameters that require input. For all other parameters, review the default settings and customize them as necessary. When you finish reviewing and customizing the parameters, choose *Next*.
+. On the *Configure stack options* page, you can https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-resource-tags.html[specify tags^] (key-value pairs) for resources in your stack and https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html[set advanced options^]. When you finish, choose *Next*.
+. On the *Review* page, review and confirm the template settings. Under *Capabilities*, select the two check boxes to acknowledge that the template creates IAM resources and might require the ability to automatically expand macros.
+. Choose *Create stack* to deploy the stack.
+. To view the created resources, see the values displayed in the *Outputs* tab for the stack.
+. Verify that the Cloud WAN resources deployed successfully
++
+TIP: The Cloud WAN resources are created in the **Base Region** above by the UpdateStateMachine and the CreateNetworkNewRegion State Machine 
+.. Verify that Step Functions State Machines ran successfully for the CreateNetworkNewRegion State Machine(runs once per template).  The CreateStateMachine is not ran as Cloud WAN is a global service and only needs to be created once with the Base Template: https://console.aws.amazon.com/states[Step Function Console^]
+.. A new SDWAN Attachment will have been created and attached to the Additional Region's Transit VPC
+. Verify that Cloud WAN contains a Global Network, Core Network, and a VPC Attachment: https://console.aws.amazon.com/networkmanager/home#/networks[Network Manager Console^]
+. Add VPC summary route to Cloud WAN VPC Attachment.
+.. Follow the same guidance listed in the Base Region to create a similar summary route from the new transit VPC to the new Cloud WAN VPC Attachment.
