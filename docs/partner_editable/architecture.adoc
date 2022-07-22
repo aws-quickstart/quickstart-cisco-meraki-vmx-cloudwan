@@ -1,0 +1,14 @@
+Deploying this Quick Start for a new virtual private cloud (VPC) with
+*default parameters* builds the following _{partner-product-name}_ environment in the
+AWS Cloud.
+
+// Replace this example diagram with your own. Send us your source PowerPoint file. Be sure to follow our guidelines here : http://(we should include these points on our contributors giude)
+image::CW_architecture.png[image,width=648,height=439]
+
+Figure 1: Quick Start architecture for _{partner-product-name}_ on AWS
+
+As shown in Figure 1, the Quick Start is divided into 2 types of templates: 
+
+* A Base Region template to be deployed in the desired region.  The region should be a commonly used region in your organization. It spins up the Cloud WAN global resources, an Event Bus, event rules, as well as the various state machines needed to communicate with Cloud WAN
+** It also spins up the VPC and vMX resources described below in the Additional Regions template
+* An Additional Regions template is to be deployed in all regions that will host additional HA vMX pairs.  It deploys a VPC, the vMX devices in 2 AZs, and the necessary polling lambdas to contact your Meraki Dashboard and pull all VPN routes to the various MX branches.   Once the routes are discovered, any routes that are not already distributed into the Cloud WAN are sent to the Base Region’s EventBridge bus to be processed.  

@@ -1,0 +1,7 @@
+.DS_Store
+.taskcat/
+.taskcat_overrides.yml
+docs/.DS_Store
+docs/deployment_guide/.DS_Store
+submodules/
+taskcat_outputs/
