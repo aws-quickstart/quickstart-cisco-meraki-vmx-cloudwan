@@ -1,13 +1,13 @@
 :quickstart-project-name: quickstart-cisco-meraki-vmx-cloudwan
 :quickstart-github-org: aws-quickstart
-:partner-product-name: Cisco Meraki vMX with Cloud WAN
+:partner-product-name: Cisco Meraki Virtual MX with AWS Cloud WAN
 :partner-product-short-name: Meraki vMX
-:partner-company-name: Cisco Systems Inc.
-:doc-month: July
+:partner-company-name: Cisco Systems, Inc.
+:doc-month: August
 :doc-year: 2022
 :partner-contributors: Simarbir Singh, Cisco Technical Marketing Engineer, {partner-company-name}
 // :other-contributors: Akua Mansa, Trek10
-:aws-contributors: Josh Leatham, AWS Partner Solution Architect
+:aws-contributors: Josh Leatham, AWS Partner Solutions Architect
 :aws-ia-contributors: Shivansh Singh, AWS Integration & Automation team
 :deployment_time: 30 minutes
 :default_deployment_region: us-east-1
