@@ -2,7 +2,7 @@
 
 == Predeployment steps
 
-This Quick Start assumes familiarity with the https://documentation.meraki.com/Getting_Started[Meraki dashboard^] and setting up a vMX appliance on AWS. For more information, see https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Amazon_Web_Services_(AWS)[vMX setup guide for Amazon Web Services (AWS)^].
+This Quick Start assumes familiarity with the https://documentation.meraki.com/Getting_Started[Meraki dashboard^] and setting up a vMX appliance on AWS. For more information, refer to https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Amazon_Web_Services_(AWS)[vMX Setup Guide for Amazon Web Services (AWS)^].
 
 === Prepare your AWS account
 
@@ -12,29 +12,29 @@ This Quick Start requires a subscription to the AMI for {partner-product-short-n
 . Sign in to your AWS account.
 . Open the page for the {marketplace_listing_url}[{marketplace_subscription} AMI in AWS Marketplace^], and then choose *Continue to Subscribe*.
 . Review the terms and conditions for software usage, and then choose *Accept Terms*. +
-  A confirmation page loads, and an email confirmation is sent to the account owner. For detailed subscription instructions, see the https://aws.amazon.com/marketplace/help/200799470[AWS Marketplace documentation^].
+  A confirmation page loads, and an email is sent to the account owner. For detailed subscription instructions, refer to the https://aws.amazon.com/marketplace/help/200799470[AWS Marketplace documentation^].
 . When the subscription process is complete, exit out of AWS Marketplace without further action. *Do not* provision the software from AWS Marketplace—the Quick Start deploys the AMI for you.
 
 === Prepare your {partner-product-short-name} account
-. Complete the instructions in the "Meraki Dashboard Configuration" section of the https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Amazon_Web_Services_(AWS)[vMX Setup Guide for Amazon Web Services (AWS)^]. During configuration, you generate authentication tokens for the vMX appliances. Copy and save the tokens. You must enter them in the `vMX1Token` and `vMX2Token` parameters in the AWS CloudFormation console during Quick Start deployment.
+. Complete the instructions in the *Meraki Dashboard Configuration* section of the https://documentation.meraki.com/MX/MX_Installation_Guides/vMX_Setup_Guide_for_Amazon_Web_Services_(AWS)[vMX Setup Guide for Amazon Web Services (AWS)^]. During configuration, you generate authentication tokens for the vMX appliances. Copy and save the tokens. You must enter them in the `vMX1Token` and `vMX2Token` parameters in the AWS CloudFormation console during Quick Start deployment.
 +
 [#generate_auth_token]
 .Generating authentication tokens
 image::../docs/deployment_guide/images/meraki_vmx1.png[generate_auth_token,width=648,height=439]
 
-. For each template deployed, both Base Region and Additional Region, you must set network tag of vMXn to identify vMX nodes as the primary and secondary hub, respectively.  To set network tags in the Meraki dashboard, see https://documentation.meraki.com/General_Administration/Organizations_and_Networks/Organization_Menu/Manage_Tags[Manage Tags^].
+. For each template deployed, for both `Base Region` and `Additional Region` parameters, set the network tag of vMXn to identify vMX nodes as the primary and secondary hub, respectively. To set network tags in the Meraki dashboard, see https://documentation.meraki.com/General_Administration/Organizations_and_Networks/Organization_Menu/Manage_Tags[Manage Tags^].
 +
-TIP: This is to be done at the global dashboard level, and not the vMX Network tab.
+TIP: Perform this step at the global dashboard level, and not on the vMX *Network* tab.
 +
 [#meraki_tags]
 .Setting tags
 image::../docs/deployment_guide/images/meraki_tags.png[meraki_tags,width=648,height=439]
 
-. Configure your branch sites as Meraki Auto VPN spokes with the vMX instances as the primary and secondary hubs. For more information, see https://documentation.meraki.com/MX/Site-to-site_VPN/Meraki_Auto_VPN_-_Configuration_and_Troubleshooting[Meraki Auto VPN - Configuration and Troubleshooting^].
+. Configure your branch sites as Meraki Auto VPN spokes with the vMX instances as the primary and secondary hubs. For more information, refer to https://documentation.meraki.com/MX/Site-to-site_VPN/Meraki_Auto_VPN_-_Configuration_and_Troubleshooting[Meraki Auto VPN - Configuration and Troubleshooting^].
 
-.. Add a summary route on each VMx that includes a summary CIDR range of all AWS resources in all regions (optionally, can use multiple CIDRs for non contiguous addresses).
+.. Add a summary route on each vMX that includes a summary CIDR range of all AWS resources in all Regions. Optionally, zyou can use multiple CIDRs for non-contiguous addresses.
 
-.. Optionally, advertise the local Transit VPC subnet if needed.
+.. Optionally, advertise the local transit VPC subnet, if needed.
 +
 [#meraki_vpn]
 .VPN Settings
