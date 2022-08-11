@@ -7,7 +7,7 @@ This Quick Start assumes familiarity with the https://documentation.meraki.com/G
 === Prepare your AWS account
 
 ==== Subscribe to the {partner-product-short-name} AMI
-This Quick Start requires a subscription to the AMI for {partner-product-short-name} in AWS Marketplace.
+This Quick Start requires a subscription to the Amazon Machine Image (AMI) for {partner-product-short-name} in AWS Marketplace.
 
 . Sign in to your AWS account.
 . Open the page for the {marketplace_listing_url}[{marketplace_subscription} AMI in AWS Marketplace^], and then choose *Continue to Subscribe*.
@@ -22,7 +22,7 @@ This Quick Start requires a subscription to the AMI for {partner-product-short-n
 .Generating authentication tokens
 image::../docs/deployment_guide/images/meraki_vmx1.png[generate_auth_token,width=648,height=439]
 
-. For each template deployed, for both `Base Region` and `Additional Region` parameters, set the network tag of vMXn to identify vMX nodes as the primary and secondary hub, respectively. To set network tags in the Meraki dashboard, see https://documentation.meraki.com/General_Administration/Organizations_and_Networks/Organization_Menu/Manage_Tags[Manage Tags^].
+. For each template deployed, for both the base and additional Region parameters, set the network tag of vMXn to identify vMX nodes as the primary and secondary hub, respectively. To set network tags in the Meraki dashboard, refer to https://documentation.meraki.com/General_Administration/Organizations_and_Networks/Organization_Menu/Manage_Tags[Manage Tags^].
 +
 TIP: Perform this step at the global dashboard level, and not on the vMX *Network* tab.
 +
@@ -32,10 +32,10 @@ image::../docs/deployment_guide/images/meraki_tags.png[meraki_tags,width=648,hei
 
 . Configure your branch sites as Meraki Auto VPN spokes with the vMX instances as the primary and secondary hubs. For more information, refer to https://documentation.meraki.com/MX/Site-to-site_VPN/Meraki_Auto_VPN_-_Configuration_and_Troubleshooting[Meraki Auto VPN - Configuration and Troubleshooting^].
 
-.. Add a summary route on each vMX that includes a summary CIDR range of all AWS resources in all Regions. Optionally, zyou can use multiple CIDRs for non-contiguous addresses.
+.. Add a summary route on each vMX that includes a summary CIDR range of all AWS resources in all Regions. Optionally, you can use multiple CIDRs for non-contiguous addresses.
 
 .. Optionally, advertise the local transit VPC subnet, if needed.
 +
 [#meraki_vpn]
-.VPN Settings
+.VPN settings
 image::../docs/deployment_guide/images/meraki_vpn.png[meraki_vpn,width=648,height=439]
