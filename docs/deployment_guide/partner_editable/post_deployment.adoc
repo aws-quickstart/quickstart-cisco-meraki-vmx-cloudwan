@@ -37,10 +37,10 @@ image::../docs/deployment_guide/images/VPC_RT.gif[vpc_route,width=648,height=439
 
 === Deploy transit VPC in a different Region
 
-TIP: Ensure that you are in a different Region than the one in which you deployed the stack earlier (called the Base Region).
+TIP: Ensure that you are in a different Region than the one used in the original deployment (referred to as the base Region).
 
 . http://qs_launch_permalink[Deploy the transit VPC in a new Region^]. This template also deploys a polling Lambda function to check and configure additional routes.
-. In the upper-right corner of the navigation bar, choose an AWS Region that's different than the base deployment Region you chose for the main Quick Start deployment.
+. In the upper-right corner of the navigation bar, choose an additional AWS Region that's different from the base Region.
 . On the *Create stack* page, keep the default setting for the template URL, and then choose *Next*.
 . On the *Specify stack details* page, change the stack name if needed. Review the parameters for the template. Provide values for the parameters that require input. For all other parameters, review the default settings and customize them as necessary. When you finish reviewing and customizing the parameters, choose *Next*.
 . On the *Configure stack options* page, you can https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-resource-tags.html[specify tags^] (key-value pairs) for resources in your stack and https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-add-tags.html[set advanced options^]. When you finish, choose *Next*.
@@ -50,7 +50,7 @@ TIP: Ensure that you are in a different Region than the one in which you deploye
 . Verify that the Cloud WAN resources deployed successfully.
 +
 
-.. In the https://console.aws.amazon.com/states[Step Functions console^], verify that the `CreateNetworkNewRegion` API ran successfully. Note that the `CreateStateMachine` does not run because it was already created with the main Quick Start template.
+.. In the https://console.aws.amazon.com/states[Step Functions console^], verify that the `CreateNetworkNewRegion` API ran successfully. Note that the `CreateStateMachine` does not run because it was already created when you deployed the main Quick Start template.
 .. Confirm that a new SD-WAN attachment was created and attached to the additional Region's transit VPC.
-. In the https://console.aws.amazon.com/networkmanager/home#/networks[Network Manager console^], verify that Cloud WAN contains a global Network, a ccre network, and a VPC attachment.
-. Add a VPC summary route to the Cloud WAN VPC attachment by repeating the steps you took earlier for the base Region when creating a similar summary route from the new transit VPC to the new Cloud WAN VPC attachment.
+. In the https://console.aws.amazon.com/networkmanager/home#/networks[Network Manager console^], verify that Cloud WAN contains a global network, a ccre network, and a VPC attachment.
+. Add a VPC summary route to the Cloud WAN VPC attachment by repeating the steps you took earlier for the base Region. At that time, you created a similar summary route from the new transit VPC to the new Cloud WAN VPC attachment.
