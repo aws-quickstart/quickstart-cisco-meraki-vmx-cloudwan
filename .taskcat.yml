@@ -1,5 +1,5 @@
 project:
-  name: quickstart-cisco-meraki-sd-wan-cw
+  name: quickstart-cisco-meraki-vmx-cloudwan
   regions:
   - us-east-1
   s3_regional_buckets: true
