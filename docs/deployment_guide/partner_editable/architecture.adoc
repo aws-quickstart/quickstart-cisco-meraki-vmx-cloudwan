@@ -14,9 +14,9 @@ As shown in <<architecture1>>, this Quick Start sets up the following:
 * Two highly available transit VPCs in two separate AWS Regions.*
 * In each VPC, two Availability Zones that contain a {partner-product-short-name} appliance with internet access via an internet gateway (not shown).
 * An AWS Cloud WAN core network that includes the following:
-** A core network policy that includes the routing policy.
+** A core network policy that includes the routing policy (not shown).
 ** A software-defined wide area networks (SD-WAN) segment that can be integrated into customer-provided workload segments (not part of Quick Start). Routes from each {partner-product-short-name} branch connected via the transit VPCs are propagated throughout the SD-WAN segment for sharing with additional workload segments.
-** For each Region deployed, an AWS Cloud WAN core network edge attached to a transit VPC.
+** For each Region deployed, an AWS Cloud WAN core network edge for connecting workload VPCs to the transit VPC.
 * Amazon Step Functions state machine to orchestrate API calls that update the Cloud WAN core network policy with additional branch routes as they are discovered in the {partner-product-short-name} dashboard.
 * Amazon EventBridge to send events from each Region to the Step Functions state machine when updates are needed.
 * AWS Secrets Manager to store a {partner-product-short-name} API key, which is used by AWS Lambda to access the Meraki dashboard when updating route tables.
