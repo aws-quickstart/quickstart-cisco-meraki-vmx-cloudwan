@@ -7,20 +7,20 @@ AWS Cloud.
 
 [#architecture1]
 .Quick Start architecture for {partner-product-short-name} on AWS
-image::../docs/deployment_guide/images/meraki_cw_architecture.png[Architecture]
+image::../docs/deployment_guide/images/cisco-meraki-vmx-cloud-wan-architecture-diagram.png[Architecture]
 
 As shown in <<architecture1>>, this Quick Start sets up the following:
 
-* Two highly available Transit VPCs in two separate regions.*
-* Each VPC is configured with two AZs, each with a Meraki vMX appliance with internet access via an Internet Gateway (not shown).
-* An AWS Cloud WAN Global Network and Core Network along with a Core Network Policy (CNP) that includes the routing policy.
-** Core Network includes single SDWAN Segment but can be integrated into any Workload Segment provided by customer (not part of Quick Start).
-** Routes from each Meraki branch connected via the Transit VPCs will be propagated throughout the SDWAN Segment with the future option to share these routes with additional Workload Segments.
-** Each region deployed will include a Cloud WAN Core Network Edge (CNE) that will attach to the associated regional Transit VPC.
-* Amazon Step Function State Machine to orchestrate the API calls to update the Cloud Wan CNP with any additional branch routes as they are discovered in the Meraki Dashboard.
-* AWS Lambda works with Step Functions to update the CNP
-* AWS Secrets Manager to store a Meraki API key. AWS Lambda uses the API key to access the Meraki dashboard when updating route tables.
-* Amazon EventBridge to send events from each region to the Step Function State Machine when an update is needed
+* Two highly available transit VPCs in two separate AWS Regions.*
+* In each VPC, two Availability Zones that contain a {partner-product-short-name} appliance with internet access via an internet gateway (not shown).
+* An AWS Cloud WAN core network that includes the following:
+** A core network policy that includes the routing policy (not shown).
+** A software-defined wide area networks (SD-WAN) segment that can be integrated into customer-provided workload segments (not part of Quick Start). Routes from each {partner-product-short-name} branch connected via the transit VPCs are propagated throughout the SD-WAN segment for sharing with additional workload segments.
+** For each Region deployed, an AWS Cloud WAN core network edge for connecting workload VPCs to the transit VPC.
+* Amazon Step Functions state machine to orchestrate API calls that update the Cloud WAN core network policy with additional branch routes as they are discovered in the {partner-product-short-name} dashboard.
+* Amazon EventBridge to send events from each Region to the Step Functions state machine when updates are needed.
+* AWS Secrets Manager to store a {partner-product-short-name} API key, which is used by AWS Lambda to access the Meraki dashboard when updating route tables.
+* AWS Lambda to accompany Step Functions when updating the core network policy.
 
 
 [.small]#* The template that deploys this Quick Start into an existing VPC skips the components marked by asterisks and prompts you for your existing VPC configuration.#
