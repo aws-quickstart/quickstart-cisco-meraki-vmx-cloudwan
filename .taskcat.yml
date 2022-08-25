@@ -31,7 +31,7 @@ tests:
       vMX2MerakiNetworkTag: "vMX2"
       GlobalNetworkName: "meraki_gn"
       MerakiEventBusName: "MerakiCloudWANEventBus"
-      QSS3KeyPrefix: "quickstart-cisco-meraki-sd-wan-cw/"
+      QSS3KeyPrefix: "quickstart-cisco-meraki-vmx-cloudwan/"
       QSS3BucketRegion: "$[taskcat_current_region]"
       QSS3BucketName: "$[taskcat_autobucket]"
 
